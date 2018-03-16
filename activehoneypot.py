@@ -44,7 +44,7 @@ class HoneypotPortal(Portal):
 @implementer(portal.IRealm)
 class HoneypotRealm(object):
     def requestAvatar(self, avatarID, mind, *interfaces):
-        return interfaces[0], HoneypotAvatar(avatarID), lambda: None
+        return interfaces[0], HoneypotAvatar(avatarID), lambda: None # This lambda:None can be replaced with a function to run on logout
 
 
 class HoneypotAvatar(avatar.ConchUser):
@@ -63,6 +63,7 @@ class HoneypotProtocol(protocol.Protocol): # Protocol, currently just echos data
             self.transport.loseConnection()
             return
         self.transport.write(data)
+        print(data.decode("utf-8").rstrip())
 
     def connectionMade(self):
         self.transport.write("PROTOCOL STARTED\n")
@@ -101,8 +102,8 @@ class HoneypotSession(object):
     def closed(self):
         pass
 
-components.registerAdapter(HoneypotSession, HoneypotAvatar, session.ISession)
 
+components.registerAdapter(HoneypotSession, HoneypotAvatar, session.ISession)
 
 # Todo: Implement factory code
 class HoneypotFactory(factory.SSHFactory):
@@ -116,7 +117,6 @@ class HoneypotFactory(factory.SSHFactory):
 
     def getPrimes(self):
         return PRIMES
-
 
 
 portal = portal.Portal(HoneypotRealm())
