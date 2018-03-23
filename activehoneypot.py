@@ -21,8 +21,7 @@ PRIMES = {
             889633836007296066695655481732069270550615298858522362356462966213994239650370532015908457586090329628589149803446849742862797136176274424808060302038380613106889959709419621954145635974564549892775660764058259799708313210328185716628794220535928019146593583870799700485371067763221569331286080322409646297706526831155237865417316423347898948704639476720848300063714856669054591377356454148165856508207919637875509861384449885655015865507939009502778968273879766962650318328175030623861285062331536562421699321671967257712201155508206384317725827233614202768771922547552398179887571989441353862786163421248709273143039795776049771538894478454203924099450796009937772259125621285287516787494652132525370682385152735699722849980820612370907638783461523042813880757771177423192559299945620284730833939896871200164312605489165789501830061187517738930123242873304901483476323853308396428713114053429620808491032573674192385488925866607192870249619437027459456991431298313382204980988971292641217854130156830941801474940667736066881036980286520892090232096545650051755799297658390763820738295370567143697617670291263734710392873823956589171067167839738896249891955689437111486748587887718882564384870583135509339695096218451174112035938859)],
 }
 
-ALLOWED_TEXT_COMMANDS = ["ls", "du", "ifconfig"]
-ALLOWED_EXECUTABLE_COMMANDS = ["wget", "vi"]
+SUPPORTED_COMMANDS = ["ls", "du", "ifconfig", "uname", "wget"]
 
 
 log.startLogging(sys.stderr)
@@ -73,14 +72,12 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         command = self.commandWithoutArguments(data)  # get the command without any arguments
         print("Test of command without arguments function: " + command)
 
-        executableAllowed = self.isExecutableAllowed(command)
-        textCommandSupported = self.isTextCommandSupported(command)
+        executableAllowed = self.isCommandSupported(command)
 
         if executableAllowed:
             self.sendLine(command + ": command is allowed to execute")
 
-
-        if executableAllowed == False and textCommandSupported == False:
+        if executableAllowed == False:
             self.sendLine(command + ": command not found")
 
     def sendLine(self, string):
@@ -94,14 +91,10 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     def commandWithoutArguments(self, data):  # return first 'word' of a string, no arguments
         return data.split(' ', 1)[0]
 
-    def isExecutableAllowed(self, command):  # Checks config to see if the sent command is allowed to run
-        if command in ALLOWED_EXECUTABLE_COMMANDS:
+    def isCommandSupported(self, command):  # Checks config to see if the sent command is allowed to run
+        if command in SUPPORTED_COMMANDS:
             return True
         return False
-
-    def isTextCommandSupported(self,
-                               command):  # Checks config to see if text command is allowed to run and has a response prepared
-        return False  # TODO: implement function
 
     def bytestoString(self, bytes):
         return bytes.decode("utf-8").rstrip()
