@@ -81,13 +81,15 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
         if executableAllowed:
             response = command + ": command is allowed to execute"
-            fp.write(response + "\n")
-            self.sendLine(response)
+            print(response + "\n")
+            self.ls_command()
 
         if executableAllowed == False:
             response = command + ": command not found"
             fp.write(response + "\n")
             self.sendLine(response)
+
+            self.showPrompt()
 
     def sendLine(self, string):
         string = string + "\r\n"
@@ -95,7 +97,9 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def connectionMade(self):  # Run when connection is first made.
+        self.displayMessageOfDay()
         self.transport.write("\r\n")
+        self.showPrompt()
 
     def commandWithoutArguments(self, data):  # return first 'word' of a string, no arguments
         return data.split(' ', 1)[0]
@@ -107,6 +111,23 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
     def bytestoString(self, bytes):
         return bytes.decode("utf-8").rstrip()
+
+
+    # Commands
+    def ls_command(self, arguments=[]):
+        self.sendLine("Desktop\tPublic\tTemplates\n\rDocuments\tDownloads\tMusic\n\rPictures")
+        return
+
+    def displayMessageOfDay(self):
+        file = open("./content/motd")
+        for line in file:
+            self.transport.write(line)
+        return
+
+    def showPrompt(self):
+        prompt = "root@servermachine:~$ "
+        self.transport.write(prompt)
+        return
 
 
 class HoneypotSession(object):
