@@ -143,14 +143,14 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     def logMetadata(self):
 	fp = open("dbPassword.txt", "r")
 	dbPass = fp.readline()
-	print("dbPass: ",dbPass, "\n")
+	dbPass = dbPass.rstrip('\n')
 	fp.close()
-	ipAddr = self.transport.getPeer().address.host
+	self.ipAddr = self.transport.getPeer().address.host
 
-    	self.logFolder = ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
+    	self.logFolder = self.ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
         while (os.path.isfile(self.logFolder)):
             	self.sessionNum+=1
-  	    	self.logFolder = ipAddr +'-'+str(self.sessionNum)+'-commands.txt'
+  	    	self.logFolder = self.ipAddr +'-'+str(self.sessionNum)+'-commands.txt'
 
 	access = datetime.datetime.now()
 	accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
@@ -162,13 +162,19 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 	PARAMS = {'fields':'26393'}
 	r = requests.get(url = URL, params = PARAMS)
 	data = r.json()
-	city = data['city']
-	country = data['country']
-	state = data['regionName']
-	timezone = data['timezone']
-
+	status = data['status']
+	if(status != 'fail'):
+		city = data['city']
+		country = data['country']
+		state = data['regionName']
+		timezone = data['timezone']
+	else:
+		city = ""
+		country =""
+		state = ""
+		timezone = ""
 	#Insert to Database
-	db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "attacker")
+	db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
 	cursor = db.cursor()
 	sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate);
 
