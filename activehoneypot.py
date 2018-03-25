@@ -163,9 +163,16 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
 
     def displayMessageOfDay(self):
-        file = open("./content/motd")
-        for line in file:
-            self.transport.write(line)
+        self.sendLine("\nWelcome to Ubuntu 11.10 (GNU/Linux 3.0.0-12-generic i686)\n")
+        self.sendLine("\n* Documentation https://help.ubuntu.com/\n")
+        self.sendLine("\n278 packages can be updated.\n71 updates are security updates.\n")
+        self.sendLine("\nThe programs included with the Ubuntu system are free software:")
+        self.sendLine("the exact distribution terms for each program are described in the")
+        self.sendLine("individual files in /usr/share/doc/*/copyright.\n")
+        self.sendLine("Ubuntu comes with ABSOLUTELY NO WARRANTY, the extent permitted by\napplicable law.")
+        #file = open("./content/motd")
+        #for line in file:
+        #    self.transport.write(line)
         return
 
     def showPrompt(self):
