@@ -2,6 +2,7 @@
 import sys
 import os
 import subprocess
+import datetime
 
 from twisted.conch import avatar
 from twisted.conch.ssh import factory, session, userauth, connection, keys
@@ -61,10 +62,14 @@ class HoneypotAvatar(avatar.ConchUser):
 
 
 class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling input and output from the connection
+    
+    sessionNum = 0
+    ipAddr = ''
+    logFolder = ""
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
-        ipAddr = self.transport.getPeer().address.host
-        commandsEntered = './bees/' + ipAddr + '-commands.txt'
-        fp = open(commandsEntered, "a")
+       # ipAddr = self.transport.getPeer().address.host
+       # commandsEntered = self.ipAddr + '-'+ self.sessionNum + '-commands.txt'
+        fp = open(self.logFolder, "a")
 
         if data == b'\r':  # Convert weird line returns to be proper
             data = b'\r\n'
@@ -97,7 +102,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def connectionMade(self):  # Run when connection is first made.
-        self.displayMessageOfDay()
+        self.logMetadata()
+	self.displayMessageOfDay()
         self.transport.write("\r\n")
         self.showPrompt()
 
@@ -129,6 +135,19 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         self.transport.write(prompt)
         return
 
+    def logMetadata(self):
+	ipAddr = self.transport.getPeer().address.host
+
+    	self.logFolder = ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
+        while (os.path.isfile(self.logFolder)):
+            	self.sessionNum+=1
+  	    	self.logFolder = ipAddr +'-'+str(self.sessionNum)+'-commands.txt'
+
+	access = datetime.datetime.now()
+	accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
+	accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
+	print("accessTime: ", accessTime, " accessDate: ", accessDate, "\n") 
+	#get location
 
 class HoneypotSession(object):
     def __init__(self, avatar):
