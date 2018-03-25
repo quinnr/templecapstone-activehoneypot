@@ -1,6 +1,8 @@
 # TODO: Clean up these imports
 import sys
 import subprocess
+import urllib.request
+import time
 
 #Added by Shlomo
 import datetime
@@ -70,7 +72,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     sessionNum = 0
     ipAddr = ''
     logFolder = ""
-    
+    filesDownloaded = 0
+
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
        # commandsEntered = self.ipAddr + '-'+ self.sessionNum + '-commands.txt'
@@ -85,21 +88,26 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
         fp.write(data + "\n")
         command = self.commandWithoutArguments(data)  # get the command without any arguments
+        arguments = self.commandGetArguments(data)
         print("Test of command without arguments function: " + command)
 
         executableAllowed = self.isCommandSupported(command)
 
         if executableAllowed:
-            response = command + ": command is allowed to execute"
-            print(response + "\n")
-            self.ls_command()
+            if command == "ls":
+                self.ls_command(arguments)
+            elif command == "wget":
+                self.wget_command(arguments)
+            else:
+                print("ERROR: Function for given command not found.\n")
 
         if executableAllowed == False:
             response = command + ": command not found"
-            fp.write(response + "\n")
+            fp.write(response + "\r\n\r\n")
             self.sendLine(response)
-	self.showPrompt()
-	fp.close()
+      	 
+        fp.close()
+        self.showPrompt()
 
     def sendLine(self, string):
         string = string + "\r\n"
@@ -115,6 +123,13 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     def commandWithoutArguments(self, data):  # return first 'word' of a string, no arguments
         return data.split(' ', 1)[0]
 
+    def commandGetArguments(self, data):
+        fullString = data.split(' ')
+        result = []
+        for entry in fullString[1:]:
+            result.append(entry)
+        return result
+
     def isCommandSupported(self, command):  # Checks config to see if the sent command is allowed to run
         if command in SUPPORTED_COMMANDS:
             return True
@@ -129,6 +144,24 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         self.sendLine("Desktop\tPublic\tTemplates\n\rDocuments\tDownloads\tMusic\n\rPictures")
         return
 
+    def wget_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("wget: missing URL\n\rUsage: wget [OPTION]... [URL]...\n\r\n\rTry `wget --help' for more options.")
+        else:
+            print("Downloading file from " + arguments[0])
+            self.sendLine("Resolving "+str(arguments[0])+"... 64.170.98.42, 4.31.198.61, 4.31.198.62, ...\r\n")
+            self.sendLine("Connecting to "+arguments[0]+"... connected.\r\n")
+            self.sendLine("HTTP request sent, awaiting response... 200 OK\r\n")
+            time.sleep(0.5)
+            self.sendLine("Length: 12136 (12K) [binary]\r\n")
+            time.sleep(0.5)
+            self.sendLine("\r\n\r\nfile\t\t100%[======================================>]  11.85K  --.-KB/s    in 0.003s\r\n")
+            self.sendLine("2018-03-25 02:01:58 (4.27 MB/s) - ‘rfc1149’ saved [12136/12136]")
+            urllib.request.urlretrieve(arguments[0], "attackerfile-" + str(self.filesDownloaded))
+            self.filesDownloaded = self.filesDownloaded + 1
+        return
+
+
     def displayMessageOfDay(self):
         file = open("./content/motd")
         for line in file:
@@ -136,7 +169,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def showPrompt(self):
-        prompt = "root@servermachine:~$ "
+        prompt = "\r\nroot@servermachine:~$ "
         self.transport.write(prompt)
         return
 
@@ -235,9 +268,17 @@ class HoneypotFactory(factory.SSHFactory):
     def getPrimes(self):
         return PRIMES
 
+class HoneypotPasswordAuth(FilePasswordDB):
+    pass
+
+def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
+    print("Username: " + username.decode("utf-8"))
+    print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
+    print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
+    return passwordFromNetwork
 
 portal = portal.Portal(HoneypotRealm())
-passwdfile = FilePasswordDB("passwords")
+passwdfile = HoneypotPasswordAuth("passwords", hash=honeypotHashFunction)
 portal.registerChecker(passwdfile)
 factory = HoneypotFactory()
 factory.portal = portal
@@ -245,6 +286,8 @@ factory.portal = portal
 reactor.listenTCP(2222, factory)  # Open TCP port using specified factory to handle connections.
 reactor.run()
 print("Server successfully running")
+
+
 # TODO: Implement the Protocol basics
 # class InputOutputProtocol(recvline.HistoricRecvLine):
 #     def __init__(self, user):
