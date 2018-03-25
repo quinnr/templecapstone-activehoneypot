@@ -62,6 +62,10 @@ class HoneypotAvatar(avatar.ConchUser):
 
 class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling input and output from the connection
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
+        ipAddr = self.transport.getPeer().address.host
+        commandsEntered = './bees/' + ipAddr + '-commands.txt'
+        fp = open(commandsEntered, "a")
+
         if data == b'\r':  # Convert weird line returns to be proper
             data = b'\r\n'
         elif data == b'\x03':  # Quit on receiving Ctrl+C
@@ -69,16 +73,21 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             return
 
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
+        fp.write(data + "\n")
         command = self.commandWithoutArguments(data)  # get the command without any arguments
         print("Test of command without arguments function: " + command)
 
         executableAllowed = self.isCommandSupported(command)
 
         if executableAllowed:
-            self.sendLine(command + ": command is allowed to execute")
+            response = command + ": command is allowed to execute"
+            fp.write(response + "\n")
+            self.sendLine(response)
 
         if executableAllowed == False:
-            self.sendLine(command + ": command not found")
+            response = command + ": command not found"
+            fp.write(response + "\n")
+            self.sendLine(response)
 
     def sendLine(self, string):
         string = string + "\r\n"
