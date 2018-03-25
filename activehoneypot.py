@@ -282,7 +282,10 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     print("Username: " + username.decode("utf-8"))
     print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
     print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
+    file = open('failedpasswordattempts', "a+")
+    file.write(username.decode("utf-8")+":"+username.decode("utf-8")+"\n")
     return passwordFromNetwork
+
 
 portal = portal.Portal(HoneypotRealm())
 passwdfile = HoneypotPasswordAuth("passwords", hash=honeypotHashFunction)
