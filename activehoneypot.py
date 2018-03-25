@@ -1,8 +1,12 @@
 # TODO: Clean up these imports
 import sys
-import os
 import subprocess
+
+#Added by Shlomo
 import datetime
+import MySQLdb
+import requests
+import os
 
 from twisted.conch import avatar
 from twisted.conch.ssh import factory, session, userauth, connection, keys
@@ -66,6 +70,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     sessionNum = 0
     ipAddr = ''
     logFolder = ""
+    
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
        # commandsEntered = self.ipAddr + '-'+ self.sessionNum + '-commands.txt'
@@ -93,8 +98,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             response = command + ": command not found"
             fp.write(response + "\n")
             self.sendLine(response)
-
-            self.showPrompt()
+	self.showPrompt()
+	fp.close()
 
     def sendLine(self, string):
         string = string + "\r\n"
@@ -136,6 +141,10 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def logMetadata(self):
+	fp = open("dbPassword.txt", "r")
+	dbPass = fp.readline()
+	print("dbPass: ",dbPass, "\n")
+	fp.close()
 	ipAddr = self.transport.getPeer().address.host
 
     	self.logFolder = ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
@@ -146,8 +155,29 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 	access = datetime.datetime.now()
 	accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
 	accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
-	print("accessTime: ", accessTime, " accessDate: ", accessDate, "\n") 
-	#get location
+	 
+
+
+	URL = 'http://ip-api.com/json/'+self.ipAddr
+	PARAMS = {'fields':'26393'}
+	r = requests.get(url = URL, params = PARAMS)
+	data = r.json()
+	city = data['city']
+	country = data['country']
+	state = data['regionName']
+	timezone = data['timezone']
+
+	#Insert to Database
+	db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "attacker")
+	cursor = db.cursor()
+	sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate);
+
+	try: #Execute SQL command
+		cursor.execute(sql)
+		db.commit()
+	except:
+		db.rollback()
+	db.close()
 
 class HoneypotSession(object):
     def __init__(self, avatar):
