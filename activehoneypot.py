@@ -84,6 +84,9 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         elif data == b'\x03':  # Quit on receiving Ctrl+C
             self.transport.loseConnection()
             return
+        if data == b'\r\n' or data == b'\n' or data == b'\r' or data == b'\n\r':
+            self.showPrompt()
+            return
 
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
         fp.write(data + "\n")
@@ -100,14 +103,14 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 self.wget_command(arguments)
             else:
                 print("ERROR: Function for given command not found.\n")
-
-        if executableAllowed == False:
+        elif executableAllowed == False and command.isspace() == False:
             response = command + ": command not found"
             fp.write(response + "\r\n\r\n")
             self.sendLine(response)
 
         fp.close()
         self.showPrompt()
+        return
 
     def sendLine(self, string):
         string = string + "\r\n"
@@ -132,6 +135,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
     def isCommandSupported(self, command):  # Checks config to see if the sent command is allowed to run
         if command in SUPPORTED_COMMANDS:
+            print("command "+ command + " is supported")
             return True
         return False
 
