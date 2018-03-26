@@ -105,7 +105,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 print("ERROR: Function for given command not found.\n")
         elif executableAllowed == False and command.isspace() == False:
             response = command + ": command not found"
-            fp.write(response + "\r\n\r\n")
+            fp.write(response + "\r\n")
             self.sendLine(response)
 
         fp.close()
