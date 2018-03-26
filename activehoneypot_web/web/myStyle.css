@@ -1,0 +1,92 @@
+html, body {
+    min-height:100%;
+    margin:0; 
+    padding:0; 
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: white; 
+    font-size:20px;
+}
+
+#title {
+    margin-top: 20px; 
+    padding-top:10px;
+    padding-left:20px;
+    font-size:40px;
+    font-weight:bold;
+    letter-spacing: 1.5px;
+    text-align:center;
+    float:left;
+}
+
+#titleNav {
+    font-family: serif;
+    color: white;
+    background-color:black;
+    height: 100px;
+    min-width:700px; 
+}
+
+#nav {
+    height: 100px;
+    margin-right:2%;
+    margin-top: 25px;
+    float:right;
+    letter-spacing: 1px;
+}
+
+#content {
+    padding-left:4px;	
+    padding-right:4px;	
+    padding-bottom: 30px;
+}
+
+#footer {         
+    position: fixed;
+    bottom:0px;
+    left:0xp;
+    width:99.5%;
+    background-color:black;
+    color: white; 
+    clear:both;
+    text-align:center;
+    padding:5px;	
+
+}
+
+.navLink {
+    margin-top:3px;
+    float:left;
+    font-size:18px;
+    padding: 6px;
+    padding-top:34px;
+    height: 33px;
+    text-align:center;
+    letter-spacing: 1px;
+    font-weight:bold;
+}
+
+#nav div:hover {
+    background-color: #992231;
+    text-decoration: none; 
+}
+
+#nav a {
+    color: white;
+}
+
+a {
+    text-decoration:none;  
+}
+
+.logo {
+    display: block;
+    margin-top: 7.5px;
+    margin-left:10px;
+    float: left
+}
+a:visited {
+    color: white;
+}
