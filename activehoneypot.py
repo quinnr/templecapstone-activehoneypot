@@ -361,7 +361,7 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
     print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
     file = open('failedpasswordattempts', "a+")
-    file.write(username.decode("utf-8")+":"+username.decode("utf-8")+"\n")
+    file.write(username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8")+"\n")
     return passwordFromNetwork
 
 
