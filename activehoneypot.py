@@ -28,7 +28,7 @@ PRIMES = {
             889633836007296066695655481732069270550615298858522362356462966213994239650370532015908457586090329628589149803446849742862797136176274424808060302038380613106889959709419621954145635974564549892775660764058259799708313210328185716628794220535928019146593583870799700485371067763221569331286080322409646297706526831155237865417316423347898948704639476720848300063714856669054591377356454148165856508207919637875509861384449885655015865507939009502778968273879766962650318328175030623861285062331536562421699321671967257712201155508206384317725827233614202768771922547552398179887571989441353862786163421248709273143039795776049771538894478454203924099450796009937772259125621285287516787494652132525370682385152735699722849980820612370907638783461523042813880757771177423192559299945620284730833939896871200164312605489165789501830061187517738930123242873304901483476323853308396428713114053429620808491032573674192385488925866607192870249619437027459456991431298313382204980988971292641217854130156830941801474940667736066881036980286520892090232096545650051755799297658390763820738295370567143697617670291263734710392873823956589171067167839738896249891955689437111486748587887718882564384870583135509339695096218451174112035938859)],
 }
 
-SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget"]
+SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget", "exit", "shutdown", "whoami", "pwd"]
 
 
 log.startLogging(sys.stderr)
@@ -105,10 +105,17 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 self.uname_command(arguments)
             elif command == "exit" or command == "shutdown":
                 self.exit_command(arguments)
+                self.transport.loseConnection()
             elif command == "df":
                 self.df_command(arguments)
             elif command == "ifconfig":
                 self.ifconfig_command(arguments)
+            elif command == "whoami":
+                self.whoami_command(arguments)
+            elif command == "pwd":
+                self.pwd_command(arguments)
+            #elif command == "passwd":
+            #    self.passwd_command(arguments)
             else:
                 print("ERROR: Function for given command not found.\n")
         elif executableAllowed == False and command.isspace() == False:
@@ -152,6 +159,21 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
 
     # Commands
+
+    #TODO: write passwd command, needs interactivity which we don't support yet
+    #def passwd_command(self, arguments=[]):
+    #    if arguments:
+    #        user_to_change = arguments[1]
+    #    else:
+    #        user_to_change = "root"
+
+    def pwd_command(self, arguments=[]):
+        self.sendLine("/home/root")
+        return
+
+    def whoami_command(self, arguments=[]):
+        self.sendLine("root")
+        return
 
     def ifconfig_command(self, arguments=[]):
         self.sendLine("eth0      Link encap:Ethernet  HWaddr 08:22:27:3a:cd:14")
@@ -219,13 +241,13 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def displayMessageOfDay(self):
-        self.sendLine("\nWelcome to Ubuntu 11.10 (GNU/Linux 3.0.0-12-generic i686)\n")
-        self.sendLine("\n* Documentation https://help.ubuntu.com/\n")
-        self.sendLine("\n278 packages can be updated.\n71 updates are security updates.\n")
-        self.sendLine("\nThe programs included with the Ubuntu system are free software:")
+        self.sendLine("\r\nWelcome to Ubuntu 11.10 (GNU/Linux 3.0.0-12-generic i686)\r\n")
+        self.sendLine("\r\n* Documentation https://help.ubuntu.com/\r\n")
+        self.sendLine("\r\n278 packages can be updated.\r\n71 updates are security updates.\r\n")
+        self.sendLine("\r\nThe programs included with the Ubuntu system are free software:")
         self.sendLine("the exact distribution terms for each program are described in the")
-        self.sendLine("individual files in /usr/share/doc/*/copyright.\n")
-        self.sendLine("Ubuntu comes with ABSOLUTELY NO WARRANTY, the extent permitted by\napplicable law.")
+        self.sendLine("individual files in /usr/share/doc/*/copyright.\r\n")
+        self.sendLine("Ubuntu comes with ABSOLUTELY NO WARRANTY, the extent permitted by\r\napplicable law.")
         #file = open("./content/motd")
         #for line in file:
         #    self.transport.write(line)
