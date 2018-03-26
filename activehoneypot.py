@@ -85,7 +85,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             self.transport.loseConnection()
             return
         if data == b'\r\n' or data == b'\n' or data == b'\r' or data == b'\n\r':
-            self.showPrompt()
+            #self.showPrompt()
             return
 
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
