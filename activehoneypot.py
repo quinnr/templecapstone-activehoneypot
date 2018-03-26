@@ -145,7 +145,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
     # Commands
     def ls_command(self, arguments=[]):
-        self.sendLine("Desktop\tPublic\tTemplates\n\rDocuments\tDownloads\tMusic\n\rPictures")
+        self.sendLine("Desktop\tPublic\tTemplates\tDocuments\tDownloads\tMusic\n\rPictures")
         return
 
     def wget_command(self, arguments=[]):
