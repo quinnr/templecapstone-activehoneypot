@@ -101,6 +101,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 self.ls_command(arguments)
             elif command == "wget":
                 self.wget_command(arguments)
+            elif command =="uname":
+                self.uname_command(arguments)
             else:
                 print("ERROR: Function for given command not found.\n")
         elif executableAllowed == False and command.isspace() == False:
@@ -164,6 +166,28 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             urllib.request.urlretrieve(arguments[0], "attackerfile-" + str(self.filesDownloaded))
             self.filesDownloaded = self.filesDownloaded + 1
         return
+
+    def uname_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("Linux")
+            return
+        else:
+            flag = arguments[0].replace("-", "")
+            print("Uname command run with flag: " + flag)
+            if flag=="a":
+                self.sendLine("Linux root 4.13.0-37-generic #42~16.04.1-Ubuntu SMP Wed Mar 7 16:03:28 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux")
+                return
+            elif flag == "s":
+                self.sendLine("Linux")
+                return
+            elif flag == "o":
+                self.sendLine("GNU/Linux")
+            else:
+                self.sendLine("uname: invalid option -- '" + flag + "'")
+                self.sendLine("Try 'uname --help' for more information.")
+                return
+            return
+
 
 
     def displayMessageOfDay(self):
