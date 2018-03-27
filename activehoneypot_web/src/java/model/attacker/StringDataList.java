@@ -46,7 +46,7 @@ public class StringDataList {
                     sd.state = FormatUtils.formatString(results.getObject("state"));
                     //logged_in
                     //uplaoded_files
-                    sd.date_accessed = FormatUtils.formatDate(results.getObject("time_of_day_accessed"));
+                    sd.date_accessed = FormatUtils.formatDate(results.getObject("date_accessed"));
                     this.recordList.add(sd);
                 } catch (Exception e) {
                     sd.errorMsg = "Record Level Error in model.Attacker.StringDataList Constructor: " + e.getMessage();
