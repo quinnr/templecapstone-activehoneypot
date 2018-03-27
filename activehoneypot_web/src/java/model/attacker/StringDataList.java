@@ -23,7 +23,8 @@ public class StringDataList {
 
         try {
 
-            String sql = "SELECT attackerID, ip_address, username, password, timeOfDayAccessed, metadata, logFile FROM attacker "
+            String sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, metadata, logFile, "
+                    + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
                     + " WHERE logFile LIKE ? ORDER BY logFile";
 
             PreparedStatement stmt = dbc.getConn().prepareStatement(sql);
@@ -36,11 +37,16 @@ public class StringDataList {
                     sd.attackerID = FormatUtils.formatInteger(results.getObject("attackerID"));
                     sd.ip_address = FormatUtils.formatString(results.getObject("ip_address"));
                     sd.username = FormatUtils.formatString(results.getObject("username"));
-                    sd.password = FormatUtils.formatString(results.getObject("password"));
-                    sd.dateAccessed = FormatUtils.formatDate(results.getObject("timeOfDayAccessed"));
-                    sd.timeOfDayAccessed = FormatUtils.formatTime(results.getObject("timeOfDayAccessed"));
-                    sd.metadata = FormatUtils.formatString(results.getObject("metadata"));
+                    sd.passwords = FormatUtils.formatString(results.getObject("passwords"));             
+                    sd.time_of_day_accessed = FormatUtils.formatTime(results.getObject("time_of_day_accessed"));
                     sd.logFile = FormatUtils.formatString(results.getObject("logFile"));
+                    sd.sessions = FormatUtils.formatInteger(results.getObject("sessions"));
+                    sd.country = FormatUtils.formatString(results.getObject("country"));
+                    sd.city = FormatUtils.formatString(results.getObject("city"));
+                    sd.state = FormatUtils.formatString(results.getObject("state"));
+                    //logged_in
+                    //uplaoded_files
+                    sd.date_accessed = FormatUtils.formatDate(results.getObject("date_accessed"));
                     this.recordList.add(sd);
                 } catch (Exception e) {
                     sd.errorMsg = "Record Level Error in model.Attacker.StringDataList Constructor: " + e.getMessage();
