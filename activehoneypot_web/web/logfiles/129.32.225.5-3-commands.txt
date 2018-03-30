@@ -1,0 +1,14 @@
+df
+ah
+ah: command not found
+ls
+df
+df
+ah
+ah: command not found
+ls
+ifconfig
+exit
+exit: command not found
+shutdown
+shutdown: command not found

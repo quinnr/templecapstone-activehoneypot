@@ -1,0 +1,7 @@
+whoami
+ifconfig
+ipconfig
+ipconfig: command not found
+uname
+uname -a
+uname -o

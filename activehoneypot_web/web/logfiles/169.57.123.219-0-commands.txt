@@ -1,0 +1,12 @@
+ls
+pwd
+pwd: command not found
+whoami
+whoami: command not found
+exit
+exit: command not found
+df
+touch test.txt
+touch: command not found
+exit
+exit: command not found

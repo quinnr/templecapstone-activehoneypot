@@ -23,9 +23,9 @@ public class StringDataList {
 
         try {
 
-            String sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, metadata, logFile, "
+            String sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
                     + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
-                    + " WHERE logFile LIKE ? ORDER BY logFile";
+                    + " WHERE country LIKE ? ORDER BY attackerID";
 
             PreparedStatement stmt = dbc.getConn().prepareStatement(sql);
             stmt.setString(1, attackerNameStartsWith + "%");

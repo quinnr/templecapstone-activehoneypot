@@ -1,0 +1,8 @@
+ls
+ls
+cd
+cd: command not found
+uname
+uname -a
+uname a
+exit
