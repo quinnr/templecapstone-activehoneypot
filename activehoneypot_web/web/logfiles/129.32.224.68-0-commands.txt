@@ -1,0 +1,7 @@
+whoami
+pwd
+ls
+df
+top
+top: command not found
+exit

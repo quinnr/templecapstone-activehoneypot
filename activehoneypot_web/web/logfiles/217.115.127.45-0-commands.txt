@@ -1,0 +1,4 @@
+ls
+top
+top: command not found
+df

@@ -20,7 +20,7 @@
             attackerNameStartsWith = "";
         }
 
-            System.out.println("jsp page ready to search for champion with " + attackerNameStartsWith);
+            System.out.println("jsp page ready to search for attacker with " + attackerNameStartsWith);
             list = new StringDataList(attackerNameStartsWith, dbc);
     } 
 

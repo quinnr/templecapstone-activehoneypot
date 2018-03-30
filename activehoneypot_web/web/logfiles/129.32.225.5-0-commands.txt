@@ -1,0 +1,52 @@
+
+: command not found
+
+ls
+
+: command not found
+
+ls
+
+: command not found
+
+
+: command not found
+
+
+: command not found
+
+
+: command not found
+
+ls
+
+: command not found
+
+
+: command not found
+
+
+: command not found
+
+
+: command not found
+
+
+: command not found
+
+l
+l: command not found
+
+
+: command not found
+
+
+: command not found
+
+ls
+
+: command not found
+
+
+: command not found
+

@@ -1,0 +1,12 @@
+ls
+cats
+cats: command not found
+
+wget google.com
+wget cats
+exit
+exit: command not found
+
+exit
+exit: command not found
+

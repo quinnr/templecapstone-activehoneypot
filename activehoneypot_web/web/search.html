@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Get attacker info</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <link href="myStyle.css" rel="stylesheet" type="text/css" />
+
+        <style type="text/css">
+            body {
+                background-color: #972635;
+                color:white;
+                /*                font-size:14px;
+                                font-weight:bold;
+                                letter-spacing:1px;
+                                line-height:24px;
+                                margin:auto;
+                                font-family:Verdana, Geneva, sans-serif;*/
+            }
+            #box, table, #attackerList {
+                margin:15px;
+            }
+
+            #imageContainer {
+                width:70px;
+                height: 60px;
+                display:none;
+            }
+
+            #attackerName {
+                padding-bottom:25px;
+            }
+
+            thead td {
+                color:#972635;
+                padding: 4px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                background-color: #eeeeFF;
+                font-weight: bold;
+                font-size:20px;
+            }
+
+            td {
+                padding: 4px;
+            }
+        </style>
+    </head>
+    <body ng-app="">
+        <div ng-include src="'top.html'"> </div>
+        <div id="box">
+            <h1>Search for attacker logs</h1>
+
+            <br/><br/>Enter starting characters of country for search, for example
+            <input type="text" id="attackerSearch" value="U" size="30" />
+            <input type="button" value="Search" onClick="javascript:ajaxGetData()"/>
+            <br/>
+            <div id="databaseError"></div>
+            <div id="attackerTable"></div>  
+        </div>
+
+
+        <script language="Javascript" type="text/javascript">
+
+            function $(element) {
+                return document.getElementById(element);
+            }
+
+
+
+            function jsBuildSelectTag(optionList, tagId, parentId) {
+                //console.log("tagId: " + tagId);
+                //console.log("parentId: " + parentId);
+
+                var parent = document.getElementById(parentId); // get ref to parent element
+
+                // Create a select tag, set it's id and append this tag to the parent.
+                var selectList = document.createElement("select");
+                selectList.id = tagId;
+                parent.appendChild(selectList);
+
+                //Create and append the options
+                // i in optionList just iterates i from 0 to length of list-1.
+                for (i in optionList) {
+
+                    // new Option() input parameers are displayed option, option value. 
+                    var myOption = new Option(optionList[i].name, optionList[i].id); // displayed option, option value
+                    selectList.appendChild(myOption);
+                }
+            }
+
+            function ajaxGetData() {
+                //alert ('sending request'); 
+                //var url = "DataSearch_Web_API.jsp";
+                var url = "webApi.jsp";
+                url += "?q=" + $("attackerSearch").value;
+                console.log("ajaxGetData() url is " + url);
+                httpReq.open("GET", url);
+                httpReq.onreadystatechange = ajaxCallbackData;
+                httpReq.send(null);
+                $("attackerTable").innerHTML = "";
+            }
+
+            function ajaxGetFile(snippetFileName) {
+                //alert ('sending request'); 
+                //var url = "DataSearch_Web_API.jsp";
+                var url = snippetFileName;
+                console.log("ajaxGetFile() url is " + url);
+                httpReq.open("GET", url);
+                httpReq.onreadystatechange = handleResponse;
+                httpReq.send(null);
+                $("attackerTable").innerHTML = "";
+            }
+            function handleResponse() {
+                if (httpReq.readyState === 4 && httpReq.status === 200) {
+                    var response = httpReq.responseText;
+                    $("attackerTable").innerHTML = response;
+                }
+            }
+
+
+            function ajaxCallbackData() {
+                console.log("ajaxCallBackData(). Ready state is " +
+                        httpReq.readyState + " and httpReq status is " + httpReq.status);
+                if (httpReq.readyState == 4 && httpReq.status == 200) {
+
+                    var response = httpReq.responseText;
+                    console.log("ajaxCallBackData() response text is " + response);
+
+                    // wrap the json in parentheses to avoid tripping over javascript ambiguity...
+                    response = "(" + response + ")";
+                    var obj = eval(response);
+                    console.log("click to open up 'obj' item below.");
+                    console.log(obj);
+
+                    if (obj == null) {
+                        $("attackerTable").innerHTML = "Error: JSON string evaluated to null.";
+                        return;
+                    }
+                    if (obj.dbError == null) {
+                        $("attackerTable").innerHTML = "Error: JSON string did not have a 'dbError' property.";
+                        return;
+                    }
+
+                    if (obj.dbError.length > 0) {
+                        $("attackerTable").innerHTML = "Database error: " + obj.dbError;
+                        return;
+                    }
+
+                    if (obj.recordList == null) {
+                        $("attackerTable").innerHTML = "Error: JSON string did not have a 'recordList' property.";
+                        return;
+                    }
+
+                    if (obj.recordList.length == 0) {
+                        $("attackerTable").innerHTML = "No Attacks Match Your Search";
+                        return;
+                    }
+
+                    // use javascript to modify the DOM (document object model). 
+                    // we create a HTML table, then add rows and cols into that table.
+                    var newRow;
+                    var newCell;
+                    var newImg;
+
+                    var newTable = document.createElement("table");
+                    $("attackerTable").appendChild(newTable);
+
+                    for (i in obj.recordList) {
+
+                        newRow = newTable.insertRow(i);
+                        newCell = newRow.insertCell(0);
+
+                        if (obj.recordList[i].ip_address !== '') {
+                            newCell.innerHTML = obj.recordList[i].ip_address;
+                        } else {
+                            newCell.innerHTML = "N/A";
+                        }
+
+                        newCell = newRow.insertCell(1);
+                        newCell.innerHTML = obj.recordList[i].country;
+
+                        newCell = newRow.insertCell(2);
+                        newCell.innerHTML = obj.recordList[i].state;
+
+                        newCell = newRow.insertCell(3);
+                        newCell.innerHTML = obj.recordList[i].city;
+
+                        newCell = newRow.insertCell(4);
+                        newCell.innerHTML = obj.recordList[i].date_accessed;
+
+                        newCell = newRow.insertCell(5);
+                        newCell.innerHTML = obj.recordList[i].time_of_day_accessed;
+
+                        newCell = newRow.insertCell(6);
+                        newImg = document.createElement("img");
+                        newImg.src = "pics/text.png";
+                        newImg.class = obj.recordList[i].logFile;
+                        (function (i) {
+                            newImg.onclick = function () {
+                                ajaxGetFile('logfiles/' + obj.recordList[i].logFile);
+                            };
+                            newCell.appendChild(newImg);
+//                            newCell.id = "output"; 
+//                            if (obj.recordList[i].logFile !== '') {
+//                                jQuery.get('test.txt', function (data) {
+//                                    $('#output').text(data); 
+//                                });
+//                            }
+                        })(i);
+                    }
+
+
+
+                    // done adding regular rows, add header row at top: 
+
+                    newHead = newTable.createTHead();
+                    newRow = newHead.insertRow(0);
+
+                    newCell = newRow.insertCell(0);
+                    newCell.innerHTML = "IP Address";
+
+                    newCell = newRow.insertCell(1);
+                    newCell.innerHTML = "Country";
+
+                    newCell = newRow.insertCell(2);
+                    newCell.innerHTML = "State";
+
+                    newCell = newRow.insertCell(3);
+                    newCell.innerHTML = "City";
+
+                    newCell = newRow.insertCell(4);
+                    newCell.innerHTML = "Date accessed";
+
+                    newCell = newRow.insertCell(5);
+                    newCell.innerHTML = "Time of Day";
+
+                    newCell = newRow.insertCell(6);
+                    newCell.innerHTML = "Logs";
+
+                }
+            }
+
+
+            // MAIN PROGRAM
+
+            //Make the XMLHttpRequest Object
+
+            var httpReq;
+            if (window.XMLHttpRequest) {
+                httpReq = new XMLHttpRequest();  //For Firefox, Safari, Opera
+            } else if (window.ActiveXObject) {
+                httpReq = new ActiveXObject("Microsoft.XMLHTTP");         //For IE 5+
+            } else {
+                alert('ajax not supported');
+            }
+
+        </script>
+
+    </body>
+</html>

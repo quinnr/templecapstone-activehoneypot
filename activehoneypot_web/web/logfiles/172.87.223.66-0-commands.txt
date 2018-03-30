@@ -1,0 +1,2 @@
+echo "WinSCP: this is end-of-file:0"
+echo: command not found
