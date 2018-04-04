@@ -286,15 +286,14 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             country = data['country']
             state = data['regionName']
             timezone = data['timezone']
+	    lat = data['lat']
+	    lon = data['lon']
         else:
-            city = ""
-            country =""
-            state = ""
-            timezone = ""
+            city = country = state = timezone = lat = lon = ""
         #Insert to Database
         db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
         cursor = db.cursor()
-        sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate);
+        sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, 'latitude', 'longitude') VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s','%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
 
         try: #Execute SQL command
             cursor.execute(sql)
@@ -362,6 +361,25 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
     file = open('failedpasswordattempts', "a+")
     file.write(username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8")+"\n")
+    
+    
+    #INSERT to database
+    access = datetime.datetime.now()
+    accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
+    accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
+
+    db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+        cursor = db.cursor()
+        sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`ip_address`, `usernames`, `passwords`,'usernames_passwords', `time_access`,'date_access') VALUES ('%s', '%s','%s', '%s', '%s','%s')"% (self.ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"),username.decode("utf-8") +":"+passwordFromNetwork.decode("utf-8"), time_access, date_access);
+
+        try: #Execute SQL command
+            cursor.execute(sql)
+            db.commit()
+        except:
+            db.rollback()
+        db.close()
+
+
     return passwordFromNetwork
 
 
