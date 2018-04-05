@@ -286,8 +286,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             country = data['country']
             state = data['regionName']
             timezone = data['timezone']
-	    lat = data['lat']
-	    lon = data['lon']
+            lat = data['lat']
+            lon = data['lon']
         else:
             city = country = state = timezone = lat = lon = ""
         #Insert to Database
@@ -361,24 +361,28 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
     file = open('failedpasswordattempts', "a+")
     file.write(username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8")+"\n")
-    
+    file.close() 
     
     #INSERT to database
+    fp = open("dbPassword.txt", "r")
+    dbPass = fp.readline()
+    dbPass = dbPass.rstrip('\n')
+    fp.close()
     access = datetime.datetime.now()
     accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
     accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
 
     db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
-        cursor = db.cursor()
-        sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`ip_address`, `usernames`, `passwords`,'usernames_passwords', `time_access`,'date_access') VALUES ('%s', '%s','%s', '%s', '%s','%s')"% (self.ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"),username.decode("utf-8") +":"+passwordFromNetwork.decode("utf-8"), time_access, date_access);
+    cursor = db.cursor()
+    sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`usernames`, `passwords`, `time_access`,'date_access') VALUES ('%s','%s', '%s','%s')"% ( username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, accessDate);
 
-        try: #Execute SQL command
-            cursor.execute(sql)
-            db.commit()
-        except:
-            db.rollback()
-        db.close()
-
+    try: #Execute SQL command
+       cursor.execute(sql)
+       db.commit()
+    except:
+       print("can't execute passwords INSERT")
+       db.rollback()
+    db.close()
 
     return passwordFromNetwork
 
