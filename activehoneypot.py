@@ -5,11 +5,12 @@ import urllib.request
 import time
 
 #Added by Shlomo
-import datetime
+#import datetime
 import MySQLdb
 import requests
 import os
 
+from datetime import time, datetime
 from twisted.conch import avatar
 from twisted.conch.ssh import factory, session, userauth, connection, keys
 from twisted.conch.ssh.transport import SSHServerTransport
@@ -89,7 +90,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             return
 
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
-        fp.write(data + "\n")
+        timestamp = '[{:%Y-%m-%d %H:%M:%S}]'.format(datetime.now())
+        fp.write(timestamp + " " + data + "\n")
         command = self.commandWithoutArguments(data)  # get the command without any arguments
         arguments = self.commandGetArguments(data)
         print("Test of command without arguments function: " + command)
@@ -270,7 +272,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             self.sessionNum+=1
             self.logFolder = self.ipAddr +'-'+str(self.sessionNum)+'-commands.txt'
 
-        access = datetime.datetime.now()
+        access = datetime.now()
         accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
         accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
 
@@ -368,7 +370,7 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     dbPass = fp.readline()
     dbPass = dbPass.rstrip('\n')
     fp.close()
-    access = datetime.datetime.now()
+    access = datetime.now()
     accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
     accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
 
