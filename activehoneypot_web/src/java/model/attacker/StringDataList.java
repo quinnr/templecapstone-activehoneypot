@@ -15,18 +15,31 @@ public class StringDataList {
     }
 
     // overloaded constructor populates the list (and possibly the dbError)
-    public StringDataList(String attackerNameStartsWith, DbConn dbc) {
+    public StringDataList(String attackerNameStartsWith, DbConn dbc, String searchBy) {
 
         StringData sd = new StringData();
 
         System.out.println("Searching for champions that start with " + attackerNameStartsWith);
 
         try {
-
-            String sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
-                    + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
-                    + " WHERE country LIKE ? ORDER BY attackerID";
-
+            String sql;
+            if (searchBy.equals("state")) {
+                sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + " WHERE state LIKE ? ORDER BY attackerID DESC";
+            } else if (searchBy.equals("city")) {
+                sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + " WHERE city LIKE ? ORDER BY attackerID DESC";
+            } else if (searchBy.equals("ip")) {
+                sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + " WHERE ip_address LIKE ? ORDER BY attackerID DESC";
+            } else {
+                sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + " WHERE country LIKE ? ORDER BY attackerID DESC";
+            }
             PreparedStatement stmt = dbc.getConn().prepareStatement(sql);
             stmt.setString(1, attackerNameStartsWith + "%");
             ResultSet results = stmt.executeQuery();
@@ -37,7 +50,7 @@ public class StringDataList {
                     sd.attackerID = FormatUtils.formatInteger(results.getObject("attackerID"));
                     sd.ip_address = FormatUtils.formatString(results.getObject("ip_address"));
                     sd.username = FormatUtils.formatString(results.getObject("username"));
-                    sd.passwords = FormatUtils.formatString(results.getObject("passwords"));             
+                    sd.passwords = FormatUtils.formatString(results.getObject("passwords"));
                     sd.time_of_day_accessed = FormatUtils.formatTime(results.getObject("time_of_day_accessed"));
                     sd.logFile = FormatUtils.formatString(results.getObject("logFile"));
                     sd.sessions = FormatUtils.formatInteger(results.getObject("sessions"));

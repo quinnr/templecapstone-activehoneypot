@@ -21,7 +21,7 @@
         }
 
             System.out.println("jsp page ready to search for attacker with " + attackerNameStartsWith);
-            list = new StringDataList(attackerNameStartsWith, dbc);
+            list = new StringDataList(attackerNameStartsWith, dbc, "ip");
     } 
 
     // PREVENT DB connection leaks:
