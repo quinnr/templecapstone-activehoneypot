@@ -6,8 +6,9 @@ html, body {
 
 body {
     font-family: Arial, Helvetica, sans-serif;
-    background-color: gray; 
+    background-color: #972635; 
     font-size:20px;
+    color: white; 
 }
 
 #title {
@@ -69,7 +70,7 @@ body {
 }
 
 #nav div:hover {
-    background-color: #992231;
+    background-color: #972635;
     text-decoration: none; 
 }
 
@@ -90,3 +91,21 @@ a {
 a:visited {
     color: white;
 }
+#navLocal {
+    height: 100px;
+    margin-right:2%;
+    margin-top: 5px;
+    float:right;
+    letter-spacing: 1px;
+}
+
+#navLocal div:hover {
+    background-color: black;
+    text-decoration: none; 
+}
+#navLocal div:active {
+    background-color: black;
+    text-decoration: none; 
+}
+
+

@@ -50,9 +50,15 @@
         <div ng-include src="'top.html'"> </div>
         <div id="box">
             <h1>Search for attacker logs</h1>
-
-            <br/><br/>Enter starting characters of country for search, for example
-            <input type="text" id="attackerSearch" value="U" size="30" />
+            <div class="navLink" style="float:left;"><a>Select by:</a></div>
+            <div id="navLocal" style="float:left; margin-top:0px;">
+                <div class="navLink" id="ipSearch" onClick="searchByIP()"><a href="">IP Address</a></div>
+                <div class="navLink" id="countrySearch" onClick="searchByCountry()"><a href="">Country</a></div>
+                <div class="navLink" id="stateSearch" onClick="searchByState()"><a href="">State</a></div>
+                <div class="navLink" id="citySearch" onClick="searchByCity()"><a href="">City</a></div>
+            </div>
+            <div style="clear:both"></div>
+            <input type="text" id="attackerSearch" value="" size="30" />
             <input type="button" value="Search" onClick="javascript:ajaxGetData()"/>
             <br/>
             <div id="databaseError"></div>
@@ -65,8 +71,6 @@
             function $(element) {
                 return document.getElementById(element);
             }
-
-
 
             function jsBuildSelectTag(optionList, tagId, parentId) {
                 //console.log("tagId: " + tagId);
@@ -89,10 +93,66 @@
                 }
             }
 
+            function searchByCountry() {
+                stateSelected = 0;
+                citySelected = 0;
+                ipSelected = 0;
+                countrySelected = 1;
+                $("ipSearch").style.backgroundColor = "#972635";
+                $("countrySearch").style.backgroundColor = "black";
+                $("stateSearch").style.backgroundColor = "#972635";
+                $("citySearch").style.backgroundColor = "#972635";
+            }
+
+            function searchByState() {
+                stateSelected = 1;
+                citySelected = 0;
+                ipSelected = 0;
+                countrySelected = 0;
+                $("ipSearch").style.backgroundColor = "#972635";
+                $("countrySearch").style.backgroundColor = "#972635";
+                $("stateSearch").style.backgroundColor = "black";
+                $("citySearch").style.backgroundColor = "#972635";
+            }
+
+            function searchByCity() {
+                stateSelected = 0;
+                citySelected = 1;
+                ipSelected = 0;
+                countrySelected = 0;
+                $("ipSearch").style.backgroundColor = "#972635";
+                $("countrySearch").style.backgroundColor = "#972635";
+                $("stateSearch").style.backgroundColor = "#972635";
+                $("citySearch").style.backgroundColor = "black";
+            }
+
+            function searchByIP() {
+                stateSelected = 0;
+                citySelected = 0;
+                ipSelected = 1;
+                countrySelected = 0;
+                $("ipSearch").style.backgroundColor = "black";
+                $("countrySearch").style.backgroundColor = "#972635";
+                $("stateSearch").style.backgroundColor = "#972635";
+                $("citySearch").style.backgroundColor = "#972635";
+            }
+
+            var stateSelected = 0;
+            var citySelected = 0;
+            var ipSelected = 0;
+            var countrySelected = 0;
+
             function ajaxGetData() {
-                //alert ('sending request'); 
-                //var url = "DataSearch_Web_API.jsp";
-                var url = "webApi.jsp";
+                var url;
+                if (stateSelected) {
+                    url = "API/stateAPI.jsp";
+                } else if (citySelected) {
+                    url = "API/cityAPI.jsp";
+                } else if (ipSelected) {
+                    url = "API/ipaddressAPI.jsp";
+                } else {
+                    url = "API/countryAPI.jsp";
+                }
                 url += "?q=" + $("attackerSearch").value;
                 console.log("ajaxGetData() url is " + url);
                 httpReq.open("GET", url);
@@ -196,17 +256,12 @@
                         newImg = document.createElement("img");
                         newImg.src = "pics/text.png";
                         newImg.class = obj.recordList[i].logFile;
+                        
                         (function (i) {
                             newImg.onclick = function () {
                                 ajaxGetFile('logfiles/' + obj.recordList[i].logFile);
                             };
                             newCell.appendChild(newImg);
-//                            newCell.id = "output"; 
-//                            if (obj.recordList[i].logFile !== '') {
-//                                jQuery.get('test.txt', function (data) {
-//                                    $('#output').text(data); 
-//                                });
-//                            }
                         })(i);
                     }
 
@@ -241,6 +296,10 @@
                 }
             }
 
+            function strcmp(a, b)
+            {
+                return (a < b ? -1 : (a > b ? 1 : 0));
+            }
 
             // MAIN PROGRAM
 
