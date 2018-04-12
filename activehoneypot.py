@@ -266,7 +266,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         dbPass = dbPass.rstrip('\n')
         fp.close()
         self.ipAddr = self.transport.getPeer().address.host
-
+        print(dbPass)
         self.logFolder = self.ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
         while (os.path.isfile(self.logFolder)):
             self.sessionNum+=1
@@ -276,38 +276,46 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
         accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
 
-
-
         URL = 'http://ip-api.com/json/'+self.ipAddr
-        PARAMS = {'fields':'26393'}
+        PARAMS = {'fields':'57597'}
         r = requests.get(url = URL, params = PARAMS)
         data = r.json()
         status = data['status']
+        lat = lon = ""
+        print(data)
         if(status != 'fail'):
             city = data['city']
             country = data['country']
             state = data['regionName']
             timezone = data['timezone']
-            lat = data['lat']
-            lon = data['lon']
+            lat = str(data['lat'])
+            lon = str(data['lon'])
         else:
-            city = country = state = timezone = lat = lon = ""
+             city = country = state = timezone = lat = lon = ""
+        #print("LAT: ", lat, "LON: ", lon)
+        
+        
         #Insert to Database
         db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
         cursor = db.cursor()
-        sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, 'latitude', 'longitude') VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s','%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
+        #sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, 'latitude', 'longitude') VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
+
+        sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate);
 
         try: #Execute SQL command
             cursor.execute(sql)
             db.commit()
+            print("Commit logMetadata")
         except:
             db.rollback()
+            print("Can't Commit logMetadata")
         db.close()
 
 class HoneypotSession(object):
     def __init__(self, avatar):
         pass
-
+    def getPty(self, terminal, windowSize, attrs):
+        return None
     ## Currently the SSH client gives a weird error about PTY sessions, this code doesn't work but
     ## is my current attempt to fix that.
     # def getPty(self, term, windowSize, attrs):
@@ -361,30 +369,33 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     print("Username: " + username.decode("utf-8"))
     print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
     print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
-    file = open('failedpasswordattempts', "a+")
-    file.write(username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8")+"\n")
-    file.close() 
     
-    #INSERT to database
-    fp = open("dbPassword.txt", "r")
-    dbPass = fp.readline()
-    dbPass = dbPass.rstrip('\n')
-    fp.close()
-    access = datetime.now()
-    accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
-    accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
+    if((passwordFromNetwork.decode("utf-8"))!=(passwordFromFile.decode("utf-8"))):
+        file = open('failedpasswordattempts', "a+")
+        file.write(username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8")+"\n")
+        file.close() 
+    
+        #INSERT to database
+        fp = open("dbPassword.txt", "r")
+        dbPass = fp.readline()
+        dbPass = dbPass.rstrip('\n')
+        fp.close()
+        access = datetime.now()
+        accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
+        accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
+    
+        print("tryingToOpenDb")
+        db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+        cursor = db.cursor()
+        sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`usernames`, `passwords`, `time_access`,'date_access') VALUES ('%s','%s', '%s','%s')"% ( username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, accessDate);
 
-    db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
-    cursor = db.cursor()
-    sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`usernames`, `passwords`, `time_access`,'date_access') VALUES ('%s','%s', '%s','%s')"% ( username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, accessDate);
-
-    try: #Execute SQL command
-       cursor.execute(sql)
-       db.commit()
-    except:
-       print("can't execute passwords INSERT")
-       db.rollback()
-    db.close()
+        try: #Execute SQL command
+           cursor.execute(sql)
+           db.commit()
+        except:
+           print("can't execute passwords INSERT")
+           db.rollback()
+        db.close()
 
     return passwordFromNetwork
 
