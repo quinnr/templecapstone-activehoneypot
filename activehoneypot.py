@@ -265,8 +265,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         dbPass = fp.readline()
         dbPass = dbPass.rstrip('\n')
         fp.close()
-        self.ipAddr = self.transport.getPeer().address.host
-        print(dbPass)
+        self.ipAddr = self.transport.getPeer().address.host 
         self.logFolder = self.ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
         while (os.path.isfile(self.logFolder)):
             self.sessionNum+=1
@@ -290,49 +289,44 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             timezone = data['timezone']
             lat = str(data['lat'])
             lon = str(data['lon'])
+        
+            #Insert to Database
+            db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+            cursor = db.cursor()
+            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, 'latitude', 'longitude') VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
+
+            try: #Execute SQL command
+                cursor.execute(sql)
+                db.commit()
+                print("Commit logMetadata")
+            except:
+                db.rollback()
+                print("Can't Commit logMetadata")
+            db.close()
+        elif(data['message'] == 'private range'):
+            db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+            cursor = db.cursor()
+            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, accessDate);
+
+            try: #Execute SQL command
+                cursor.execute(sql)
+                db.commit()
+                print("Commit logMetadata")
+            except:
+                db.rollback()
+                print("Can't Commit logMetadata")
+            db.close()
+
         else:
-             city = country = state = timezone = lat = lon = ""
-        #print("LAT: ", lat, "LON: ", lon)
+            print("Can't Commit logMetadata because ", data['message'], ".")        
         
-        
-        #Insert to Database
-        db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
-        cursor = db.cursor()
-        #sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, 'latitude', 'longitude') VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
-
-        sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate);
-
-        try: #Execute SQL command
-            cursor.execute(sql)
-            db.commit()
-            print("Commit logMetadata")
-        except:
-            db.rollback()
-            print("Can't Commit logMetadata")
-        db.close()
-
 class HoneypotSession(object):
     def __init__(self, avatar):
         pass
     def getPty(self, terminal, windowSize, attrs):
         return None
-    ## Currently the SSH client gives a weird error about PTY sessions, this code doesn't work but
-    ## is my current attempt to fix that.
-    # def getPty(self, term, windowSize, attrs):
-    # print("PTY session")
-    # self.windowSize = windowSize
-    # protocol = HoneypotProtocol()
-    # transport = SSHSessionProcessProtocol(self)
-    # protocol.makeConnection(transport)
-    # transport.makeConnection(session.wrapProtocol(protocol))
-    # return None
-
     def execCommand(self, proto, cmd):
         raise Exception("Remote command execution mode is disabled.")
-
-    # def request_pty_req(self, data):
-    # return True
-    # raise Exception("PTY requested")
 
     def openShell(self, transport):
         protocol = HoneypotProtocol()
@@ -366,9 +360,9 @@ class HoneypotPasswordAuth(FilePasswordDB):
     pass
 
 def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
-    print("Username: " + username.decode("utf-8"))
-    print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
-    print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
+    #print("Username: " + username.decode("utf-8"))
+    #print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
+    #print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
     
     if((passwordFromNetwork.decode("utf-8"))!=(passwordFromFile.decode("utf-8"))):
         file = open('failedpasswordattempts', "a+")
