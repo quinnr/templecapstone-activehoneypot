@@ -6,7 +6,7 @@ import time
 
 #Added by Shlomo
 #import datetime
-import MySQLdb
+import MySQLdb 
 import requests
 import os
 
@@ -381,11 +381,14 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
         print("tryingToOpenDb")
         db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
         cursor = db.cursor()
-        sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`usernames`, `passwords`, `time_access`,'date_access') VALUES ('%s','%s', '%s','%s')"% ( username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, accessDate);
+        sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`usernames`, `passwords`, `usernames_passwords`, `time_access`, `date_access`) VALUES ('%s','%s', '%s', '%s','%s')"% ( username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8"), accessTime, accessDate);
 
         try: #Execute SQL command
            cursor.execute(sql)
            db.commit()
+
+        except MySQLdb.Error as e:
+           print(e)
         except:
            print("can't execute passwords INSERT")
            db.rollback()
