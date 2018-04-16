@@ -75,6 +75,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     ipAddr = ''
     logFolder = ""
     filesDownloaded = 0
+    filesys = None
 
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
@@ -140,6 +141,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         self.displayMessageOfDay()
         self.transport.write("\r\n")
         self.showPrompt()
+        self.filesys = FileSystem()
 
     def commandWithoutArguments(self, data):  # return first 'word' of a string, no arguments
         return data.split(' ', 1)[0]
