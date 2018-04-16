@@ -1,7 +1,7 @@
-whoami
-pwd
-ls
-df
-top
-top: command not found
-exit
+whoami <br />
+pwd <br />
+ls <br />
+df <br />
+top <br />
+top: command not found<br />
+exit <br />

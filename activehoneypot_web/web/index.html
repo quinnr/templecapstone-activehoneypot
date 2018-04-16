@@ -3,15 +3,106 @@
         <title>ActiveHoneypot</title>
         <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
         <link href="myStyle.css" rel="stylesheet" type="text/css" />
+        <style>
+            @import url(https://fonts.googleapis.com/css?family=Roboto:300);
+
+            .login-page {
+                width: 360px;
+                padding: 8% 0 0;
+                margin: auto;
+            }
+            .form {
+                position: relative;
+                z-index: 1;
+                background: #FFFFFF;
+                max-width: 360px;
+                margin: 0 auto 100px;
+                padding: 45px;
+                text-align: center;
+                box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+            }
+            .form input {
+                font-family: "Roboto", sans-serif;
+                outline: 0;
+                background: #f2f2f2;
+                width: 100%;
+                border: 0;
+                margin: 0 0 15px;
+                padding: 15px;
+                box-sizing: border-box;
+                font-size: 14px;
+            }
+            .form button {
+                font-family: "Roboto", sans-serif;
+                text-transform: uppercase;
+                outline: 0;
+                background: #4CAF50;
+                width: 100%;
+                border: 0;
+                padding: 15px;
+                color: #FFFFFF;
+                font-size: 14px;
+                -webkit-transition: all 0.3 ease;
+      
+                cursor: pointer;
+            }
+            .form button:hover,.form button:active,.form button:focus {
+                background: #43A047;
+            }
+            .form #message {
+                margin: 15px 0 0;
+                color: #b3b3b3;
+                font-size: 12px;
+            }
+            .form #message a {
+                color: #4CAF50;
+                text-decoration: none;
+            }
+            
+            body {
+                background: #972635; /* fallback for old browsers */
+                font-family: "Roboto", sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;      
+            }
+        </style>
     </head>
     <body ng-app="">
-        <div ng-include src="'top.html'"> </div>
-
-        <div id="content" style="margin:12px">
-            <h1>Login Page</h1>
-            
-
+        <div id="titleNav">
+            <div class="logo"><img src="pics/templelogo.png"></div>
+            <div id="title">
+                Active Honeypot
+            </div>
+            <div style="clear:both"></div>
+        </div>
+        <div class="login-page">
+            <h1 style="text-align:center">Account login</h1>
+            <div class="form">
+                <form class="login-form" id="loginForm">
+                    <input id="username" type="text" placeholder="username"/>
+                    <input id="password" type="password" placeholder="password"/>
+                    <button onclick="login()"><a id="userInfo" href="">login</a></button>
+                    <p id="message"></p>
+                </form>
+            </div>
         </div>
         <div ng-include src="'bottom.html'"></div>
+        <script>
+            function $(element) {
+                return document.getElementById(element);
+            }
+            function login() {
+                if (($("username").value == new String("tuf62546@temple.edu")) && ($("password").value == new String("password"))) {
+                    $("userInfo").href = "data.html"; 
+                    $("message").innerHTML = ""
+                    console.log("login() success");
+                } else {
+                    console.log("login() failure");
+                    $("message").innerHTML = "Login failed. Incorrect email/password."
+
+                }
+            }
+            
+        </script>
     </body>
 </html>
