@@ -3,6 +3,7 @@ import sys
 import subprocess
 import urllib.request
 import time
+from fs import tempfs
 
 #Added by Shlomo
 import datetime
@@ -277,7 +278,20 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
     print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
     return passwordFromNetwork
 
+class FileSystem(object):
+    def __init__(self):
+        self.filesys = tempfs.TempFS()
+
+        # TODO: Use this format to make some default files, like /etc/passwd, etc.
+        pointer = self.filesys.open("/newfile","w+")
+        pointer.write("Contents of a file.\r\n")
+        pointer.close()
+
+        print("File tree initalized:\r\n")
+        self.filesys.tree()
+
 portal = portal.Portal(HoneypotRealm())
+filesys = FileSystem()
 passwdfile = HoneypotPasswordAuth("passwords", hash=honeypotHashFunction)
 portal.registerChecker(passwdfile)
 factory = HoneypotFactory()

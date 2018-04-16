@@ -6,5 +6,7 @@ You can generate these with openssh-keygen.
 
 Dependencies:
 
-twisted
+twisted[conch]
 mysqlclient
+requests
+fs
