@@ -3,6 +3,45 @@
         <title>Data Analysis</title>
         <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
         <link href="myStyle.css" rel="stylesheet" type="text/css" />
+        <style type="text/css">
+            body {
+                background-color: #972635;
+                color:white;
+                /*                font-size:14px;
+                                font-weight:bold;
+                                letter-spacing:1px;
+                                line-height:24px;
+                                margin:auto;
+                                font-family:Verdana, Geneva, sans-serif;*/
+            }
+            #box, table, #attackerList {
+                margin:15px;
+            }
+
+            #imageContainer {
+                width:70px;
+                height: 60px;
+                display:none;
+            }
+
+            #attackerName {
+                padding-bottom:25px;
+            }
+
+            thead td {
+                color:#972635;
+                padding: 4px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                background-color: #eeeeFF;
+                font-weight: bold;
+                font-size:20px;
+            }
+
+            td {
+                padding: 4px;
+            }
+        </style>
     </head>
     <body ng-app="">
         <div ng-include src="'top.html'"> </div>
@@ -10,7 +49,372 @@
         <div id="content" style="margin:12px">
             <h1>Data Analysis Breakdown</h1>
 
+            <div id="graphs">
+                <select id="selectBox" onchange="ajaxGetData()">
+                    <option value="">Search</option>
+                    <option value="country">Locations Accessed</option>
+                    <option value="time_of_day_accessed">Times Accessed</option>
+                    <option value="date_accessed">Days of the Week Accessed</option>
+                </select>
+                <div id="attackerTable">
+
+                </div>
+            </div>
 
         </div>
+
+        <script language="Javascript" type="text/javascript">
+
+                    function $(element) {
+                        return document.getElementById(element);
+                    }
+
+                    function jsBuildSelectTag(optionList, tagId, parentId) {
+                        //console.log("tagId: " + tagId);
+                        //console.log("parentId: " + parentId);
+
+                        var parent = document.getElementById(parentId); // get ref to parent element
+
+                        // Create a select tag, set it's id and append this tag to the parent.
+                        var selectList = document.createElement("select");
+                        selectList.id = tagId;
+                        parent.appendChild(selectList);
+
+                        //Create and append the options
+                        // i in optionList just iterates i from 0 to length of list-1.
+                        for (i in optionList) {
+
+                            // new Option() input parameers are displayed option, option value. 
+                            var myOption = new Option(optionList[i].name, optionList[i].id); // displayed option, option value
+                            selectList.appendChild(myOption);
+                        }
+                    }
+
+                    function ajaxGetData() {
+                        var url;
+                        url = "API/countryAPI.jsp";
+                        url += "?q=";
+                        console.log("ajaxGetData() url is " + url);
+                        httpReq.open("GET", url);
+                        httpReq.onreadystatechange = ajaxCallbackData;
+                        httpReq.send(null);
+                        $("attackerTable").innerHTML = "";
+                    }
+
+                    function handleResponse() {
+                        if (httpReq.readyState === 4 && httpReq.status === 200) {
+                            var response = httpReq.responseText;
+                            $("attackerTable").innerHTML = response;
+                        }
+                    }
+
+
+                    function ajaxCallbackData() {
+                        console.log("ajaxCallBackData(). Ready state is " +
+                                httpReq.readyState + " and httpReq status is " + httpReq.status);
+                        if (httpReq.readyState == 4 && httpReq.status == 200) {
+
+                            var response = httpReq.responseText;
+                            console.log("ajaxCallBackData() response text is " + response);
+
+                            // wrap the json in parentheses to avoid tripping over javascript ambiguity...
+                            response = "(" + response + ")";
+                            var obj = eval(response);
+                            console.log("click to open up 'obj' item below.");
+                            console.log(obj);
+
+                            if (obj == null) {
+                                $("attackerTable").innerHTML = "Error: JSON string evaluated to null.";
+                                return;
+                            }
+                            if (obj.dbError == null) {
+                                $("attackerTable").innerHTML = "Error: JSON string did not have a 'dbError' property.";
+                                return;
+                            }
+
+                            if (obj.dbError.length > 0) {
+                                $("attackerTable").innerHTML = "Database error: " + obj.dbError;
+                                return;
+                            }
+
+                            if (obj.recordList == null) {
+                                $("attackerTable").innerHTML = "Error: JSON string did not have a 'recordList' property.";
+                                return;
+                            }
+
+                            if (obj.recordList.length == 0) {
+                                $("attackerTable").innerHTML = "No Attacks Match Your Search";
+                                return;
+                            }
+
+                            // use javascript to modify the DOM (document object model). 
+                            // we create a HTML table, then add rows and cols into that table.
+                            var newRow;
+                            var newCell;
+                            var newImg;
+
+                            var newTable = document.createElement("table");
+                            $("attackerTable").appendChild(newTable);
+
+                            if ($("selectBox").value == new String("country")) {
+                                getCountryData(obj.recordList);
+
+                                for (i in country) {
+                                    newRow = newTable.insertRow(i);
+
+                                    newCell = newRow.insertCell(0);
+                                    if (country[i] == new String("")) {
+                                        newCell.innerHTML = "N/A";
+                                    } else {
+                                        newCell.innerHTML = country[i];
+                                    }
+
+                                    newCell = newRow.insertCell(1);
+                                    newCell.innerHTML = ((attackCounter[i] / obj.recordList.length) * 100).toFixed(2) + ("%");
+
+                                    newCell = newRow.insertCell(2);
+                                    newCell.innerHTML = attackCounter[i];
+                                }
+                            } else if ($("selectBox").value == new String("time_of_day_accessed")) {
+                                getTimeData(obj.recordList);
+//                                sessionCounter = sessionCounter.sort((b, a) => a - b);
+                                for (i in hour) {
+                                    newRow = newTable.insertRow(i);
+
+                                    var time = parseInt(hour[i]) - 3;
+                                    //PST
+                                    newCell = newRow.insertCell(0);
+                                    if (parseInt(time) > 12) {
+                                        newCell.innerHTML = time - 12 + "PM";
+                                    } else if (time == 0) {
+                                        newCell.innerHTML = "12AM";
+                                    } else if (time < 0) {
+                                        newCell.innerHTML = 12 + time + "PM";
+                                    } else if (time == 12) {
+                                        newCell.innerHTML = "12PM";
+                                    } else {
+                                        newCell.innerHTML = time + "AM";
+                                    }
+
+                                    //EST
+                                    newCell = newRow.insertCell(1);
+                                    if (parseInt(hour[i]) > 12) {
+                                        newCell.innerHTML = parseInt(hour[i]) - 12 + "PM";
+                                    } else if (hour[i] == new String("00")) {
+                                        newCell.innerHTML = "12AM";
+                                    } else {
+                                        newCell.innerHTML = parseInt(hour[i]) + "AM";
+                                    }
+
+                                    time = parseInt(hour[i]) + 4;
+                                    //GMT
+                                    newCell = newRow.insertCell(2);
+                                    if (parseInt(time) > 12) {
+                                        newCell.innerHTML = time - 12 + "PM";
+                                    } else if (time == 0) {
+                                        newCell.innerHTML = "12AM";
+                                    } else if (time < 0) {
+                                        newCell.innerHTML = 12 + time + "PM";
+                                    } else if (time == 12) {
+                                        newCell.innerHTML = "12PM";
+                                    } else {
+                                        newCell.innerHTML = time + "AM";
+                                    }
+
+                                    newCell = newRow.insertCell(3);
+                                    newCell.innerHTML = ((sessionCounter[i] / obj.recordList.length) * 100).toFixed(2) + ("%");
+
+                                    newCell = newRow.insertCell(4);
+                                    newCell.innerHTML = sessionCounter[i];
+                                }
+                            } else if ($("selectBox").value == new String("date_accessed")){
+                                getWeekData(obj.recordList);
+                                console.log(day); 
+                                var daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                                for (i in day) {
+                                    console.log("i= " + i);
+                                    newRow = newTable.insertRow(i);
+                                    newCell = newRow.insertCell(0);
+                                    newCell.innerHTML = new String(daysOfWeek[i]);
+                                    newCell = newRow.insertCell(1);
+                                    newCell.innerHTML = ((dayCounter[i] / obj.recordList.length) * 100).toFixed(2) + ("%");
+                                    newCell = newRow.insertCell(2);
+                                    newCell.innerHTML = dayCounter[i];
+                                }
+
+
+
+                            }
+
+
+
+                            // done adding regular rows, add header row at top: 
+
+                            newHead = newTable.createTHead();
+                            newRow = newHead.insertRow(0);
+
+                            if ($("selectBox").value == new String("country")) {
+                                newCell = newRow.insertCell(0);
+                                newCell.innerHTML = "Location";
+
+                                newCell = newRow.insertCell(1);
+                                newCell.innerHTML = "% of Attackers";
+
+                                newCell = newRow.insertCell(2);
+                                newCell.innerHTML = "# of Attackers";
+                            } else if ($("selectBox").value == new String("time_of_day_accessed")) {
+                                newRow.style.textAlign = "center";
+                                newCell = newRow.insertCell(0);
+                                newCell.innerHTML = "Timezone: </br>PST";
+
+                                newRow.style.textAlign = "center";
+                                newCell = newRow.insertCell(1);
+                                newCell.innerHTML = "Timezone: </br>EST";
+
+                                newRow.style.textAlign = "center";
+                                newCell = newRow.insertCell(2);
+                                newCell.innerHTML = "Timezone: </br>GMT";
+
+                                newCell = newRow.insertCell(3);
+                                newCell.innerHTML = "% of Attackers";
+
+                                newCell = newRow.insertCell(4);
+                                newCell.innerHTML = "# of Attackers";
+                            } else if ($("selectBox").value == new String("date_accessed")){
+                                newRow.style.textAlign = "center";
+                                newCell = newRow.insertCell(0);
+                                newCell.innerHTML = "Day of the week";
+
+                                newCell = newRow.insertCell(1);
+                                newCell.innerHTML = "% of Attackers";
+
+                                newCell = newRow.insertCell(2);
+                                newCell.innerHTML = "# of Attackers";
+                            }
+                        }
+                    }
+
+                    var country = [];
+                    var attackCounter = [];
+                    function getCountryData(list) {
+                        country = [];
+                        attackCounter = [];
+                        for (var i = 0; i < 10; i++) {
+                            attackCounter[i] = 0;
+                        }
+                        country[0] = list[0].country;
+                        attackCounter[0] = 1;
+
+                        for (j in list) {
+                            var k;
+                            for (k = 0; k < country.length; k++) {
+                                if (list[j].country == new String(country[k])) {
+                                    console.log("Country matched." + list[j].country + " == " + country[k]);
+                                    attackCounter[k] += 1;
+                                    break;
+                                } else if (list[j].country == new String("")) {
+                                    //if the country isn't in our database, don't add it to our country array
+                                    console.log("Country was not found in " + "list[" + j + "]");
+                                    break;
+                                } else {
+                                    console.log("Country does not match." + list[j].country + " != " + country[k]);
+                                    if (k == (country.length - 1)) {
+                                        if (isNaN(attackCounter[k + 1])) {
+                                            attackCounter[k + 1] = 0;
+                                            console.log("Added new attackCounter " + attackCounter[k + 1]);
+                                        }
+                                        console.log("Add new country to country array: " + list[j].country);
+                                        country[k + 1] = new String(list[j].country);
+                                        attackCounter[k + 1] += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    var hour = [];
+                    var sessionCounter = [];
+                    function getTimeData(list) {
+                        hour = [];
+                        sessionCounter = [];
+                        for (var i = 0; i < 24; i++) {
+                            sessionCounter[i] = 0;
+                        }
+                        hour[0] = list[0].time_of_day_accessed.substr(0, 2);
+                        sessionCounter[0] = 1;
+
+                        for (j in list) {
+                            var timeString = list[j].time_of_day_accessed.substr(0, 2);
+                            var k;
+                            for (k = 0; k < hour.length; k++) {
+                                if (timeString == new String(hour[k])) {
+                                    console.log("Hour matched. " + timeString + " == " + hour[k]);
+                                    sessionCounter[k] += 1;
+                                    break;
+                                } else {
+                                    console.log("Hour does not match." + timeString + " != " + hour[k]);
+                                    if (k == (hour.length - 1)) {
+                                        if (isNaN(sessionCounter[k + 1])) {
+                                            sessionCounter[k + 1] = 0;
+                                            console.log("Added new sessionCounter " + sessionCounter[k + 1]);
+                                        }
+                                        console.log("Adding new hour to hour array: " + timeString);
+                                        hour[k + 1] = timeString;
+                                        sessionCounter[k + 1] += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    var day = [];
+                    var dayCounter = [];
+                    function getWeekData(list) {
+                        day = [];
+                        dayCounter = [];
+                        for (var i = 0; i < 7; i++) {
+                            dayCounter[i] = 0;
+                            day [i] = i; 
+                        }
+
+                        for (j in list) {
+                            var dayString = new Date(list[j].date_accessed).getDay();
+                            var k;
+                            for (k = 0; k < day.length; k++) {
+                                if (dayString == new String(day[k])) {
+                                    console.log("Day matched. " + dayString + " == " + day[k]);
+                                    dayCounter[k] += 1;
+                                    break;
+                                } else {
+                                    console.log("Day does not match. " + dayString + " != " + day[k]);
+                                    if (k == (day.length - 1)) {
+                                        if (isNaN(dayCounter[k + 1])) {
+                                            dayCounter[k + 1] = 0;
+                                            console.log("Added new sessionCounter " + dayCounter[k + 1]);
+                                        }
+                                        console.log("Adding new day to day array: " + dayString);
+                                        day[k + 1] = dayString;
+                                        dayCounter[k + 1] += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+
+                    // MAIN PROGRAM
+
+                    //Make the XMLHttpRequest Object
+
+                    var httpReq;
+                    if (window.XMLHttpRequest) {
+                        httpReq = new XMLHttpRequest();  //For Firefox, Safari, Opera
+                    } else if (window.ActiveXObject) {
+                        httpReq = new ActiveXObject("Microsoft.XMLHTTP");         //For IE 5+
+                    } else {
+                        alert('ajax not supported');
+                    }
+
+        </script>
     </body>
 </html>
