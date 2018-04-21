@@ -1,14 +1,9 @@
 <!DOCTYPE html>
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
-<html>
-    <head>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
         <title>Graphs</title>
-        <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
-        <link href="myStyle.css" rel="stylesheet" type="text/css" />
+        <script src="./graphs_files/angular.min.js"></script>
+        <script src="./graphs_files/Chart.min.js"></script>
+        <link href="./graphs_files/myStyle.css" rel="stylesheet" type="text/css">
         <style type="text/css">
             body {
                 background-color: #972635;
@@ -50,7 +45,7 @@ and open the template in the editor.
         </style>
     </head>
     <body ng-app="">
-        <div ng-include src="'top.html'"> </div>
+        <div ng-include="" src="&#39;top.html&#39;"> </div>
         <div id="content" style="margin:12px">
             <h1>Graphs</h1>
 
@@ -83,9 +78,10 @@ and open the template in the editor.
                 httpReq.open("GET", url);
                 httpReq.onreadystatechange = ajaxCallbackData;
                 httpReq.send(null);
-                $("displayGraphs").innerHTML = "";
+                //$("displayGraphs").innerHTML = "";
             }
-
+            
+            
             var ctx = document.getElementById("myChart").getContext('2d');
             var myChart = new Chart(ctx, {
                 type: 'bar',
@@ -124,5 +120,6 @@ and open the template in the editor.
                 }
             });
         </script>        
-    </body>
-</html>
+    
+
+</body></html>
