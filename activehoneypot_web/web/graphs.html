@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>Graphs</title>
+        <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <link href="myStyle.css" rel="stylesheet" type="text/css" />
+        <style type="text/css">
+            body {
+                background-color: #972635;
+                color:white;
+                /*                font-size:14px;
+                                font-weight:bold;
+                                letter-spacing:1px;
+                                line-height:24px;
+                                margin:auto;
+                                font-family:Verdana, Geneva, sans-serif;*/
+            }
+            #box, table, #attackerList {
+                margin:15px;
+            }
+
+            #imageContainer {
+                width:70px;
+                height: 60px;
+                display:none;
+            }
+
+            #attackerName {
+                padding-bottom:25px;
+            }
+
+            thead td {
+                color:#972635;
+                padding: 4px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                background-color: #eeeeFF;
+                font-weight: bold;
+                font-size:20px;
+            }
+
+            td {
+                padding: 4px;
+            }
+        </style>
+    </head>
+    <body ng-app="">
+        <div ng-include src="'top.html'"> </div>
+        <div id="content" style="margin:12px">
+            <h1>Graphs</h1>
+
+            <div id="graphs">
+                <select id="selectBox" onchange="ajaxGetData()">
+                    <option value="Select Option">Select Option</option>
+                    <option value="down_files_freq">Downloaded Files (frequency)</option>
+                    <option value="files_access_freq">Files Accessed (frequency)</option>
+                    <option value="ip_address_freq">IP Addresses (frequency)</option>
+                    <option value="password_freq">Passwords Used (frequency)</option>
+                    <option value="time_access">Time Accessed (series)</option>
+                </select>
+                <div id="displayGraphs">
+                    <canvas id="myChart" width="400" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <script language="Javascript" type="text/javascript">
+
+            function $(element) {
+                return document.getElementById(element);
+            }
+
+            function ajaxGetData() {
+                var url;
+                url = "API/countryAPI.jsp";
+                url += "?q=";
+                console.log("ajaxGetData() url is " + url);
+                httpReq.open("GET", url);
+                httpReq.onreadystatechange = ajaxCallbackData;
+                httpReq.send(null);
+                $("displayGraphs").innerHTML = "";
+            }
+
+            var ctx = document.getElementById("myChart").getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+                    datasets: [{
+                            label: '# of Votes',
+                            data: [12, 19, 3, 5, 2, 3],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                                'rgba(75, 192, 192, 0.2)',
+                                'rgba(153, 102, 255, 0.2)',
+                                'rgba(255, 159, 64, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255,99,132,1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                    }
+                }
+            });
+        </script>        
+    </body>
+</html>
