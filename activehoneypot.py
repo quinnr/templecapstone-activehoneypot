@@ -324,8 +324,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 class HoneypotSession(object):
     def __init__(self, avatar):
         pass
-    #def getPty(self, terminal, windowSize, attrs):
-        #return None
+    def getPty(self, terminal, windowSize, attrs):
+        pass
     def execCommand(self, proto, cmd):
         raise Exception("Remote command execution mode is disabled.")
 
