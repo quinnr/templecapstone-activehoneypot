@@ -287,7 +287,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             city = data['city']
             country = data['country']
             state = data['regionName']
-            timezone = data['timezone']
+            #timezone = data['timezone']
             lat = str(data['lat'])
             lon = str(data['lon'])
 
