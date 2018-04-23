@@ -327,7 +327,7 @@ class HoneypotSession(object):
     def __init__(self, avatar):
         pass
     #def getPty(self, terminal, windowSize, attrs):
-        #return None
+        #pass
     def execCommand(self, proto, cmd):
         raise Exception("Remote command execution mode is disabled.")
 
