@@ -76,6 +76,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     logFolder = ""
     filesDownloaded = 0
     filesys = None
+    working_directory = "/home"
 
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
@@ -407,6 +408,10 @@ class FileSystem(object):
         pointer = self.filesys.open("/newfile","w+")
         pointer.write("Contents of a file.\r\n")
         pointer.close()
+        self.filesys.makedir("/home")
+        pointer = self.filesys.open("/home/notes","w+")
+        pointer.write("my username for email is bob, my password for email is password")
+        pointer.close()
 
         print("File tree initalized:\r\n")
         self.filesys.tree()
@@ -420,6 +425,7 @@ factory = HoneypotFactory()
 factory.portal = portal
 
 reactor.listenTCP(2222, factory)  # Open TCP port using specified factory to handle connections.
+reactor.listenTCP(2223, factory, interface="::") # Listen on this port for IPV6 interfaces (RaspPi direct network support)
 reactor.run()
 print("Server successfully running")
 
