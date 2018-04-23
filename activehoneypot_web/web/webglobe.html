@@ -1,0 +1,189 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <title>WebGL Globe</title>
+        <meta charset="utf-8">
+        <link href="myStyle.css" rel="stylesheet" type="text/css" />
+        <style type="text/css">
+
+            #info {
+
+                font-size: 11px;
+                position: absolute;
+                bottom: 5px;
+                background-color: rgba(0,0,0,0.8);
+                border-radius: 3px;
+                right: 10px;
+                padding: 10px;
+
+            }
+
+            #currentInfo {
+                width: 270px;
+                position: absolute;
+                left: 20px;
+                top: 63px;
+
+                background-color: rgba(0,0,0,0.2);
+
+                border-top: 1px solid rgba(255,255,255,0.4);
+                padding: 10px;
+            }
+
+            .bull {
+                padding: 0 5px;
+                color: #555;
+            }
+
+            .year {
+                font: 16px Georgia;
+                line-height: 26px;
+                height: 30px;
+                text-align: center;
+                float: left;
+                width: 90px;
+                color: rgba(255, 255, 255, 0.4);
+
+                cursor: pointer;
+                -webkit-transition: all 0.1s ease-out;
+            }
+
+            .year:hover, .year.active {
+                font-size: 23px;
+                color: #fff;
+            }
+
+            #ce span {
+                display: none;
+            }
+
+            #ce {
+                width: 107px;
+                height: 55px;
+                display: block;
+                position: absolute;
+                bottom: 15px;
+                left: 20px;
+                background: url(/globe/ce.png);
+            }
+
+
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    </head>
+    <body>
+        <div id="titleNav">
+            <div class="logo"><img src="pics/templelogo.png"></div>
+            <div id="title">
+                Active Honeypot
+            </div>
+            <div id="nav">
+                <div class="navLink"><a href="search.html">Search logs</a></div>
+                <div class="navLink"><a href="data.html">Data Analysis</a></div>
+                <div class="navLink"><a href="graphs.html">Graphs</a></div>
+                <div class="navLink"><a href="webglobe.html">WebGL Globe</a></div>
+                <div class="navLink"><a href="index.html">Log out</a></div>
+            </div>
+            <div style="clear:both"></div>
+        </div>
+        <div id="container" style="height:70%"></div>
+
+
+
+
+        <script type="text/javascript" src="globe/third-party/Detector.js"></script>
+        <script type="text/javascript" src="globe/third-party/three.min.js"></script>
+        <script type="text/javascript" src="globe/third-party/Tween.js"></script>
+        <script type="text/javascript" src="globe/globe.js"></script>
+        <script type="text/javascript">
+
+            var countryLocation = [];
+
+//            function getJSONLocations(list) {
+//                var data;
+//                var totalEntries = 0;
+//                var baseMagnitude = 0.025;
+//                var singleMagnitude = 0;
+//                data = "[[\"\",[";
+//                countryLocation[0] = new String(list[0].latitude + ", " + list[0].longitude); 
+//                getUniquePairs(list); 
+//                console.log("CountryLocation: " + countryLocation); 
+//                var uniquePairNum = []; 
+//                for (var i = 0; i < countryLocation.length; i++){
+//                    uniquePairNum[i] = getCountForUniquePair(list, countryLocation[i]); 
+//                    console.log("Number of entries for Unique Pair" + i + ": " + uniquePairNum[i]); 
+//                }
+//
+//                baseMagnitude = 100 / totalEntries * 0.025;
+//                for (var i = 0; i < countryLocation.length; i++) {
+//                    singleMagnitude = baseMagnitude * parseFloat(uniquePairNum[i]);
+//                    console.log(uniquePairNum[i]);
+//                    console.log(singleMagnitude);
+//                    data = data.concat(countryLocation[i] + ", " + (singleMagnitude.toFixed(2)).toString() + ", ");
+//                }
+//
+//                data = data.concat("0,0,0]]]");
+//                console.log(countryLocation.length);
+//                console.log(data);
+//
+//                return data;
+//            }
+
+            if (!Detector.webgl) {
+                Detector.addGetWebGLMessage();
+            } else {
+
+                var years = ['2018'];
+                var container = document.getElementById('container');
+                var globe = new DAT.Globe(container);
+
+                var httpReq;
+                if (window.XMLHttpRequest) {
+                    httpReq = new XMLHttpRequest();  //For Firefox, Safari, Opera
+                } else if (window.ActiveXObject) {
+                    httpReq = new ActiveXObject("Microsoft.XMLHTTP");         //For IE 5+
+                } else {
+                    alert('ajax not supported');
+                }
+
+                httpReq.onreadystatechange = function () {
+                    if (httpReq.readyState == 4 && httpReq.status == 200) {
+
+                        var response = httpReq.responseText;
+                        console.log("ajaxCallBackData() response text is " + response);
+
+                        // wrap the json in parentheses to avoid tripping over javascript ambiguity...
+                        response = "(" + response + ")";
+                        var obj = eval(response);
+                        console.log(obj);
+//
+//                        getLocationData(obj.recordList);
+//                        console.log("RecordList length: " + obj.recordList.length);
+                        // Parse the JSON
+                        var data = JSON.parse(httpReq.responseText);
+
+                        // Tell the globe about your JSON data
+                        for (var i = 0; i < data.length; i++) {
+                            globe.addData(data[i][1], {format: 'magnitude', name: data[i][0]});
+                        }
+
+                        // Create the geometry
+                        globe.createPoints();
+
+                        // Begin animation
+                        globe.animate();
+
+                    }
+                };
+                var url;
+                url = "locations.txt";
+                console.log("ajaxGetData() url is " + url);
+                httpReq.open("GET", url);
+                httpReq.send(null);
+            }
+
+        </script>
+
+    </body>
+
+</html>

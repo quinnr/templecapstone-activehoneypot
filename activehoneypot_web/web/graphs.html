@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
         <title>Graphs</title>
-        <script src="./graphs_files/angular.min.js"></script>
-        <script src="./graphs_files/Chart.min.js"></script>
-        <link href="./graphs_files/myStyle.css" rel="stylesheet" type="text/css">
+        <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <link href="myStyle.css" rel="stylesheet" type="text/css">
+
         <style type="text/css">
             body {
                 background-color: #972635;
@@ -45,7 +45,7 @@
         </style>
     </head>
     <body ng-app="">
-        <div ng-include="" src="&#39;top.html&#39;"> </div>
+        <div ng-include src="'top.html'"> </div>
         <div id="content" style="margin:12px">
             <h1>Graphs</h1>
 
@@ -58,18 +58,17 @@
                     <option value="password_freq">Passwords Used (frequency)</option>
                     <option value="time_access">Time Accessed (series)</option>
                 </select>
-                <div id="displayGraphs" style="background-color:white; margin:12px">
+                <div id="displayGraphs" style="background-color:white; margin:12px; width:35%; height:75%">
                     <canvas id="myChart" width="400" height="400"></canvas>
                 </div>
             </div>
         </div>
 
+        <script src="Chart.js"></script>
         <script language="Javascript" type="text/javascript">
-
             function $(element) {
                 return document.getElementById(element);
             }
-
             function ajaxGetData() {
                 var url;
                 url = "API/countryAPI.jsp";
@@ -80,16 +79,12 @@
                 httpReq.send(null);
                 //$("displayGraphs").innerHTML = "";
             }
-
             function ajaxCallbackData() {
-
                 console.log("ajaxCallBackData(). Ready state is " +
                         httpReq.readyState + " and httpReq status is " + httpReq.status);
                 if (httpReq.readyState == 4 && httpReq.status == 200) {
-
                     var response = httpReq.responseText;
                     console.log("ajaxCallBackData() response text is " + response);
-
                     // wrap the json in parentheses to avoid tripping over javascript ambiguity...
                     response = "(" + response + ")";
                     var obj = eval(response);
@@ -122,13 +117,10 @@
                 }
 
                 transformData(obj.recordList);
-
                 var ctx = document.getElementById("myChart").getContext('2d');
                 var chartObj;
-
                 if ($("selectBox").value == new String("username_freq")) {
                     find_username_frequency();
-
                     if (chartObj != undefined || chartObj != null) {
                         chartObj.destroy();
                     }
@@ -216,7 +208,6 @@
 
                 } else if ($("selectBox").value == new String("password_freq")) {
                     find_password_frequency();
-
                     if (chartObj != undefined || chartObj != null) {
                         chartObj.destroy();
                     }
@@ -327,7 +318,6 @@
                 console.log(data_transformed);
 
             }
-
             var password_list = [];
             var password_count = [];
 
@@ -448,7 +438,6 @@
             }
         
 
-
             var randomColorPlugin = {
 
                 // We affect the `beforeUpdate` event
@@ -458,7 +447,6 @@
 
                     // For every data we have ...
                     for (var i = 0; i < chart.config.data.datasets[0].data.length; i++) {
-
                         // We generate a random color
                         var color = "rgba(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ",";
 
