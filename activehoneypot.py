@@ -420,6 +420,7 @@ factory = HoneypotFactory()
 factory.portal = portal
 
 reactor.listenTCP(2222, factory)  # Open TCP port using specified factory to handle connections.
+reactor.listenTCP(2223, factory, interface="::") # Listen on this port for IPV6 interfaces (RaspPi direct network support)
 reactor.run()
 print("Server successfully running")
 
