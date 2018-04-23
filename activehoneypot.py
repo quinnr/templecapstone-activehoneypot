@@ -76,6 +76,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     logFolder = ""
     filesDownloaded = 0
     filesys = None
+    working_directory = "/home"
 
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
@@ -406,6 +407,10 @@ class FileSystem(object):
         # TODO: Use this format to make some default files, like /etc/passwd, etc.
         pointer = self.filesys.open("/newfile","w+")
         pointer.write("Contents of a file.\r\n")
+        pointer.close()
+        self.filesys.makedir("/home")
+        pointer = self.filesys.open("/home/notes","w+")
+        pointer.write("my username for email is bob, my password for email is password")
         pointer.close()
 
         print("File tree initalized:\r\n")
