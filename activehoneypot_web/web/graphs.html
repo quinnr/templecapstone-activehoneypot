@@ -52,8 +52,8 @@
             <div id="graphs">
                 <select id="selectBox" onchange="ajaxGetData()">
                     <option value="Select Option">Select Option</option>
-                    <option value="down_files_freq">Downloaded Files (frequency)</option>
-                    <option value="files_access_freq">Files Accessed (frequency)</option>
+                    <option value="username_freq">Username (frequency)</option>
+                    <option value="user_pass_line">Usernames vs. Passwords</option>
                     <option value="ip_address_freq">IP Addresses (frequency)</option>
                     <option value="password_freq">Passwords Used (frequency)</option>
                     <option value="time_access">Time Accessed (series)</option>
@@ -124,17 +124,99 @@
                 transformData(obj.recordList);
 
                 var ctx = document.getElementById("myChart").getContext('2d');
+                var chartObj;
 
-                if ($("selectBox").value == new String("down_files_freq")) {
+                if ($("selectBox").value == new String("username_freq")) {
+                    find_username_frequency();
 
-                } else if ($("selectBox").value == new String("files_access_freq")) {
+                    if (chartObj != undefined || chartObj != null) {
+                        chartObj.destroy();
+                    }
+
+                    var chartObj = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: username_list,
+                            datasets: [{
+                                    data: username_count,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255,99,132,1)',
+                                    borderWidth: 1
+                                }]
+                        },
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Frequency of Usernames',
+                                color: "black"
+                            },
+                            scales: {
+                                xAxes: [{
+                                        gridlines: {
+                                            color: "black"
+                                        },
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: "Usernames",
+                                            fontColor: "black"
+                                        }
+                                    }],
+                                yAxes: [{
+                                        gridlines: {
+                                            color: "black"
+                                        },
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: "Frequency",
+                                            fontColor: "black"
+                                        },
+                                        ticks: {
+                                            beginAtZero: true
+                                        }
+                                    }]
+                            }
+                        }
+                    });
+
+                } else if ($("selectBox").value == new String("user_pass_line")) {
 
                 } else if ($("selectBox").value == new String("ip_address_freq")) {
+                    ip_address_frequency();
+
+                    if (chartObj != undefined || chartObj != null) {
+                        chartObj.destroy();
+                    }
+
+                    var chartObj = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ip_address_list,
+                            datasets: [{
+                                    data: ip_address_count,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255,99,132,1)',
+                                    borderWidth: 1
+                                }]
+                        },
+                        options: {
+                            title: {
+                                display: true,
+                                text: 'Frequency of Ip Addresses'
+                            }
+                        }
+                    });
 
                 } else if ($("selectBox").value == new String("password_freq")) {
                     find_password_frequency();
 
-                    var password_freq_chart = new Chart(ctx, {
+                    if (chartObj != undefined || chartObj != null) {
+                        chartObj.destroy();
+                    }
+                    
+                    var chartObj = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: password_list,
@@ -149,10 +231,10 @@
                             legend: {
                                 display: false
                             },
-                            title:{
-                               display: true,
-                               text: 'Frequency of Passwords',
-                               color: "black"
+                            title: {
+                                display: true,
+                                text: 'Frequency of Passwords',
+                                color: "black"
                             },
                             scales: {
                                 xAxes: [{
@@ -236,11 +318,56 @@
                         }
                     }
                 }
-                console.log("click to see 'password_list' below.")
+                console.log("click to see 'password_list' below.");
                 console.log(password_list);
-                console.log("click to see 'password_count' below.")
+                console.log("click to see 'password_count' below.");
                 console.log(password_count);
             }
+
+            var username_list = [];
+            var username_count = [];
+            function find_username_frequency() {
+                for (var i = 0; i < data_transformed.length; i++) {
+                    var name = data_transformed[i][2];
+                    var index = username_list.indexOf(name);
+                    if (index === -1) {
+                        username_list.push(name);
+                        username_count.push(1);
+                        console.log("Added name: " + name + " to the username_list");
+                    } else {
+                        username_count[index] += 1;
+                        console.log("Increased username " + name + " to " + username_count[index] + " in username_count");
+                    }
+                }
+                console.log("click to see 'username_list' below.");
+                console.log(username_list);
+                console.log("click to see 'username_count' below.");
+                console.log(username_count);
+
+            }
+
+            var ip_address_list = [];
+            var ip_address_count = [];
+            function ip_address_frequency() {
+                for (var i = 0; i < data_transformed.length; i++) {
+                    var ip_address = data_transformed[i][1];
+                    var index = ip_address_list.indexOf(ip_address);
+                    if (index === -1) {
+                        ip_address_list.push(ip_address);
+                        ip_address_count.push(1);
+
+                        console.log("Added ip address: " + ip_address + " to the ip_address_list");
+                    } else {
+                        ip_address_count[index] += 1;
+                        console.log("Increased ip address " + ip_address + " to " + ip_address_count[index] + " in ip_address_count");
+                    }
+                }
+                console.log("click to see 'ip_address_list' below.");
+                console.log(ip_address_list);
+                console.log("click to see 'ip_address_count' below.");
+                console.log(ip_address_count);
+            }
+
 
             var randomColorPlugin = {
 
@@ -256,7 +383,7 @@
                         var color = "rgba(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ",";
 
                         // We push this new color to both background and border color arrays
-                        backgroundColor.push(color + "0.2)");
+                        backgroundColor.push(color + "0.4)");
                         borderColor.push(color + "1)");
                     }
 
@@ -268,7 +395,6 @@
 
             // We now register the plugin to the chart's plugin service to activate it
             Chart.pluginService.register(randomColorPlugin);
-
 
             var httpReq;
             if (window.XMLHttpRequest) {
