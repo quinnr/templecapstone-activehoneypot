@@ -32,7 +32,7 @@ PRIMES = {
             889633836007296066695655481732069270550615298858522362356462966213994239650370532015908457586090329628589149803446849742862797136176274424808060302038380613106889959709419621954145635974564549892775660764058259799708313210328185716628794220535928019146593583870799700485371067763221569331286080322409646297706526831155237865417316423347898948704639476720848300063714856669054591377356454148165856508207919637875509861384449885655015865507939009502778968273879766962650318328175030623861285062331536562421699321671967257712201155508206384317725827233614202768771922547552398179887571989441353862786163421248709273143039795776049771538894478454203924099450796009937772259125621285287516787494652132525370682385152735699722849980820612370907638783461523042813880757771177423192559299945620284730833939896871200164312605489165789501830061187517738930123242873304901483476323853308396428713114053429620808491032573674192385488925866607192870249619437027459456991431298313382204980988971292641217854130156830941801474940667736066881036980286520892090232096545650051755799297658390763820738295370567143697617670291263734710392873823956589171067167839738896249891955689437111486748587887718882564384870583135509339695096218451174112035938859)],
 }
 
-SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget", "exit", "shutdown", "whoami", "pwd"]
+SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget", "exit", "shutdown", "whoami", "pwd", "cd"]
 
 
 log.startLogging(sys.stderr)
@@ -77,6 +77,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     ipAddr = ''
     logFolder = ""
     filesDownloaded = 0
+    filesys = None
+    working_directory = "/home"
 
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
@@ -119,6 +121,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 self.whoami_command(arguments)
             elif command == "pwd":
                 self.pwd_command(arguments)
+            elif command == "cd":
+                self.cd_command(arguments)
             #elif command == "passwd":
             #    self.passwd_command(arguments)
             else:
@@ -142,6 +146,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         self.displayMessageOfDay()
         self.transport.write("\r\n")
         self.showPrompt()
+        self.filesys = FileSystem()
 
     def commandWithoutArguments(self, data):  # return first 'word' of a string, no arguments
         return data.split(' ', 1)[0]
@@ -173,8 +178,23 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     #        user_to_change = "root"
 
     def pwd_command(self, arguments=[]):
-        self.sendLine("/home/root")
+        self.sendLine(self.working_directory)
         return
+
+    def cd_command(self, arguments=[]):
+        if not arguments:
+            self.working_directory = "/"
+            return
+        string_dir = arguments[0]
+        if string_dir[:1] != "/":
+            string_dir = "/" + string_dir
+        if filesys.filesys.isdir(string_dir):
+            print("Found directory: " + string_dir)
+            self.working_directory = string_dir
+        else:
+            self.sendLine("bash: cd: "+ string_dir +": No such file or directory.")
+        return
+
 
     def whoami_command(self, arguments=[]):
         self.sendLine("root")
@@ -289,7 +309,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             city = data['city']
             country = data['country']
             state = data['regionName']
-            timezone = data['timezone']
+            #timezone = data['timezone']
             lat = str(data['lat'])
             lon = str(data['lon'])
 
@@ -326,8 +346,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 class HoneypotSession(object):
     def __init__(self, avatar):
         pass
-    def getPty(self, terminal, windowSize, attrs):
-        return None
+    #def getPty(self, terminal, windowSize, attrs):
+        #pass
     def execCommand(self, proto, cmd):
         raise Exception("Remote command execution mode is disabled.")
 
@@ -416,6 +436,12 @@ class FileSystem(object):
         pointer = self.filesys.open("/newfile","w+")
         pointer.write("Contents of a file.\r\n")
         pointer.close()
+        
+        self.filesys.makedir("/home")
+        pointer = self.filesys.open("/home/notes","w+")
+        pointer.write("my username for email is bob, my password for email is password")
+        pointer.close()
+
         print("File tree initalized:\r\n")
         self.filesys.tree()
 
@@ -427,6 +453,7 @@ factory = HoneypotFactory()
 factory.portal = portal
 
 reactor.listenTCP(2222, factory)  # Open TCP port using specified factory to handle connections.
+reactor.listenTCP(2223, factory, interface="::") # Listen on this port for IPV6 interfaces (RaspPi direct network support)
 reactor.run()
 print("Server successfully running")
 

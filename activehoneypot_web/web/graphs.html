@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+        <title>Graphs</title>
+        <script src="./graphs_files/angular.min.js"></script>
+        <script src="./graphs_files/Chart.min.js"></script>
+        <link href="./graphs_files/myStyle.css" rel="stylesheet" type="text/css">
+        <style type="text/css">
+            body {
+                background-color: #972635;
+                color:white;
+                /*                font-size:14px;
+                                font-weight:bold;
+                                letter-spacing:1px;
+                                line-height:24px;
+                                margin:auto;
+                                font-family:Verdana, Geneva, sans-serif;*/
+            }
+            #box, table, #attackerList {
+                margin:15px;
+            }
+
+            #imageContainer {
+                width:70px;
+                height: 60px;
+                display:none;
+            }
+
+            #attackerName {
+                padding-bottom:25px;
+            }
+
+            thead td {
+                color:#972635;
+                padding: 4px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                background-color: #eeeeFF;
+                font-weight: bold;
+                font-size:20px;
+            }
+
+            td {
+                padding: 4px;
+            }
+        </style>
+    </head>
+    <body ng-app="">
+        <div ng-include="" src="&#39;top.html&#39;"> </div>
+        <div id="content" style="margin:12px">
+            <h1>Graphs</h1>
+
+            <div id="graphs">
+                <select id="selectBox" onchange="ajaxGetData()">
+                    <option value="Select Option">Select Option</option>
+                    <option value="down_files_freq">Downloaded Files (frequency)</option>
+                    <option value="files_access_freq">Files Accessed (frequency)</option>
+                    <option value="ip_address_freq">IP Addresses (frequency)</option>
+                    <option value="password_freq">Passwords Used (frequency)</option>
+                    <option value="time_access">Time Accessed (series)</option>
+                </select>
+                <div id="displayGraphs" style="background-color:white; margin:12px">
+                    <canvas id="myChart" width="400" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <script language="Javascript" type="text/javascript">
+
+            function $(element) {
+                return document.getElementById(element);
+            }
+
+            function ajaxGetData() {
+                var url;
+                url = "API/countryAPI.jsp";
+                url += "?q=";
+                console.log("ajaxGetData() url is " + url);
+                httpReq.open("GET", url);
+                httpReq.onreadystatechange = ajaxCallbackData;
+                httpReq.send(null);
+                //$("displayGraphs").innerHTML = "";
+            }
+
+            function ajaxCallbackData() {
+
+                console.log("ajaxCallBackData(). Ready state is " +
+                        httpReq.readyState + " and httpReq status is " + httpReq.status);
+                if (httpReq.readyState == 4 && httpReq.status == 200) {
+
+                    var response = httpReq.responseText;
+                    console.log("ajaxCallBackData() response text is " + response);
+
+                    // wrap the json in parentheses to avoid tripping over javascript ambiguity...
+                    response = "(" + response + ")";
+                    var obj = eval(response);
+                    console.log("click to open up 'obj' item below.");
+                    console.log(obj);
+
+                    if (obj == null) {
+                        $("displayGraphs").innerHTML = "Error: JSON string evaluated to null.";
+                        return;
+                    }
+                    if (obj.dbError == null) {
+                        $("displayGraphs").innerHTML = "Error: JSON string did not have a 'dbError' property.";
+                        return;
+                    }
+
+                    if (obj.dbError.length > 0) {
+                        $("displayGraphs").innerHTML = "Database error: " + obj.dbError;
+                        return;
+                    }
+
+                    if (obj.recordList == null) {
+                        $("displayGraphs").innerHTML = "Error: JSON string did not have a 'recordList' property.";
+                        return;
+                    }
+
+                    if (obj.recordList.length == 0) {
+                        $("displayGraphs").innerHTML = "No Attacks Match Your Search";
+                        return;
+                    }
+                }
+
+                transformData(obj.recordList);
+
+                var ctx = document.getElementById("myChart").getContext('2d');
+
+                if ($("selectBox").value == new String("down_files_freq")) {
+
+                } else if ($("selectBox").value == new String("files_access_freq")) {
+
+                } else if ($("selectBox").value == new String("ip_address_freq")) {
+
+                } else if ($("selectBox").value == new String("password_freq")) {
+                    find_password_frequency();
+
+                    var password_freq_chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: password_list,
+                            datasets: [{
+                                    data: password_count,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255,99,132,1)',
+                                    borderWidth: 1
+                                }]
+                        },
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            title:{
+                               display: true,
+                               text: 'Frequency of Passwords',
+                               color: "black"
+                            },
+                            scales: {
+                                xAxes: [{
+                                        gridlines: {
+                                            color: "black"
+                                        },
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: "Passwords",
+                                            fontColor: "black"
+                                        }
+                                    }],
+                                yAxes: [{
+                                        gridlines: {
+                                            color: "black"
+                                        },
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: "Frequency",
+                                            fontColor: "black"
+                                        },
+                                        ticks: {
+                                            beginAtZero: true
+                                        }
+                                    }]
+                            }
+                        }
+                    });
+
+                } else if ($("selectBox").value == new String("time_access")) {
+
+                }
+
+            }
+
+            var data_transformed = [];
+            //Organize the JSON into a 2D array for easier access
+            function transformData(list) {
+                var i = 0;
+                for (j in list) {
+                    data_transformed[i] = new Array(14);
+                    data_transformed[i][0] = list[j].attackerID;
+                    data_transformed[i][1] = list[j].ip_address;
+                    data_transformed[i][2] = list[j].username;
+                    data_transformed[i][3] = list[j].passwords;
+                    data_transformed[i][4] = list[j].time_of_day_accessed;
+                    data_transformed[i][5] = list[j].logFile;
+                    data_transformed[i][6] = list[j].sessions;
+                    data_transformed[i][7] = list[j].country;
+                    data_transformed[i][8] = list[j].city;
+                    data_transformed[i][9] = list[j].state;
+                    data_transformed[i][10] = list[j].logged_in;
+                    data_transformed[i][11] = list[j].uploaded_files;
+                    data_transformed[i][12] = list[j].date_accessed;
+                    data_transformed[i][13] = list[j].errorMsg;
+                    i++;
+                    //console.log("Added entry " + i + " to data_transformed");
+                }
+                console.log("click to open up 'transform_data' item below.");
+                console.log(data_transformed);
+
+            }
+
+            var password_list = [];
+            var password_count = [];
+
+            //Count the password frequency
+            function find_password_frequency() {
+                for (var i = 0; i < data_transformed.length; i++) {
+                    var ps = data_transformed[i][3].split(" ");
+
+                    for (var j = 0; j < ps.length; j++) {
+                        var index = password_list.indexOf(ps[j]);
+                        if (index === -1) {
+                            password_list.push(ps[j]);
+                            password_count.push(1);
+                            console.log("Added password: " + ps[j] + " to the password_list");
+                        } else {
+                            password_count[index] += 1;
+                            console.log("Increased password " + ps[j] + " to " + password_count[index] + " in password_count");
+                        }
+                    }
+                }
+                console.log("click to see 'password_list' below.")
+                console.log(password_list);
+                console.log("click to see 'password_count' below.")
+                console.log(password_count);
+            }
+
+            var randomColorPlugin = {
+
+                // We affect the `beforeUpdate` event
+                beforeUpdate: function (chart) {
+                    var backgroundColor = [];
+                    var borderColor = [];
+
+                    // For every data we have ...
+                    for (var i = 0; i < chart.config.data.datasets[0].data.length; i++) {
+
+                        // We generate a random color
+                        var color = "rgba(" + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255) + ",";
+
+                        // We push this new color to both background and border color arrays
+                        backgroundColor.push(color + "0.2)");
+                        borderColor.push(color + "1)");
+                    }
+
+                    // We update the chart bars color properties
+                    chart.config.data.datasets[0].backgroundColor = backgroundColor;
+                    chart.config.data.datasets[0].borderColor = borderColor;
+                }
+            };
+
+            // We now register the plugin to the chart's plugin service to activate it
+            Chart.pluginService.register(randomColorPlugin);
+
+
+            var httpReq;
+            if (window.XMLHttpRequest) {
+                httpReq = new XMLHttpRequest();  //For Firefox, Safari, Opera
+            } else if (window.ActiveXObject) {
+                httpReq = new ActiveXObject("Microsoft.XMLHTTP");         //For IE 5+
+            } else {
+                alert('ajax not supported');
+            }
+        </script>
+
+
+    </body></html>
