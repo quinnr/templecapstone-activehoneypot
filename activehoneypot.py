@@ -3,7 +3,9 @@ import sys
 import subprocess
 import urllib.request
 import time
+import fs
 from fs import tempfs
+from fs.osfs import OSFS
 
 #Added by Shlomo
 #import datetime
@@ -294,7 +296,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             #Insert to Database
             db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
             cursor = db.cursor()
-            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, 'latitude', 'longitude') VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
+            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, `latitude`, `longitude`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
 
             try: #Execute SQL command
                 cursor.execute(sql)
@@ -400,15 +402,22 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
 class FileSystem(object):
     def __init__(self):
         self.filesys = tempfs.TempFS()
+       
+        dirs = ["bin", "boot", "cdrom", "dev", "etc", "home", "lib", "lib64", "lost+found", "media", "mnt", "opt", "root", "run", "sbin", "snap", "srv", "sys", "tmp", "usr", "var"]
+        for my_dir in dirs:
+           my_fs = OSFS("/"+ my_dir)
+           try:
+              fs.copy.copy_fs(my_fs, self.filesys.makedir("/"+my_dir+"/"), walker=None, on_copy=None)
+              print("dir: " + my_dir + " created")
+           except:
+              print("EXCEPTION: " + my_dir)
+           #self.filesys.tree()
 
-        # TODO: Use this format to make some default files, like /etc/passwd, etc.
         pointer = self.filesys.open("/newfile","w+")
         pointer.write("Contents of a file.\r\n")
         pointer.close()
-
         print("File tree initalized:\r\n")
         self.filesys.tree()
-
 
 portal = portal.Portal(HoneypotRealm())
 filesys = FileSystem()
