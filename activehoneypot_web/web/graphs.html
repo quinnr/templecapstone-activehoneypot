@@ -53,7 +53,7 @@
                 <select id="selectBox" onchange="ajaxGetData()">
                     <option value="Select Option">Select Option</option>
                     <option value="username_freq">Username (frequency)</option>
-                    <option value="user_pass_line">Usernames vs. Passwords</option>
+                    <option value="user_pass_scatter">Usernames vs. Passwords</option>
                     <option value="ip_address_freq">IP Addresses (frequency)</option>
                     <option value="password_freq">Passwords Used (frequency)</option>
                     <option value="time_access">Time Accessed (series)</option>
@@ -181,8 +181,13 @@
                         }
                     });
 
-                } else if ($("selectBox").value == new String("user_pass_line")) {
+                } else if ($("selectBox").value == new String("user_pass_scatter")) {
+                    username_password_organize();
 
+                    if (chartObj != undefined || chartObj != null) {
+                        chartObj.destroy();
+                    }
+                    
                 } else if ($("selectBox").value == new String("ip_address_freq")) {
                     ip_address_frequency();
 
@@ -215,7 +220,7 @@
                     if (chartObj != undefined || chartObj != null) {
                         chartObj.destroy();
                     }
-                    
+
                     var chartObj = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -265,7 +270,31 @@
                     });
 
                 } else if ($("selectBox").value == new String("time_access")) {
-
+                        organize_time_data();
+                        
+                        var chartObj = new Chart(ctx, {
+                            type: 'polarArea',
+                            data: {
+                                labels: hour,
+                                datasets:[{
+                                        data: sessionCounter,
+                                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                        borderColor: 'rgba(255,99,132,1)',
+                                        borderWidth: 1
+                                }]
+                            },
+                           options: {
+                               legend:{
+                                   position: 'right'
+                               },
+                               title: {
+                                display: true,
+                                text: 'At What Hour the Server is Accessed',
+                                color: "black"
+                            }
+                           }
+                            
+                        });
                 }
 
             }
@@ -273,6 +302,7 @@
             var data_transformed = [];
             //Organize the JSON into a 2D array for easier access
             function transformData(list) {
+                data_transformed = [];
                 var i = 0;
                 for (j in list) {
                     data_transformed[i] = new Array(14);
@@ -303,6 +333,8 @@
 
             //Count the password frequency
             function find_password_frequency() {
+                password_list = [];
+                password_count = [];
                 for (var i = 0; i < data_transformed.length; i++) {
                     var ps = data_transformed[i][3].split(" ");
 
@@ -326,7 +358,10 @@
 
             var username_list = [];
             var username_count = [];
+            //Count the username frequency
             function find_username_frequency() {
+                username_list = [];
+                username_count = [];
                 for (var i = 0; i < data_transformed.length; i++) {
                     var name = data_transformed[i][2];
                     var index = username_list.indexOf(name);
@@ -348,7 +383,10 @@
 
             var ip_address_list = [];
             var ip_address_count = [];
+            //Count the ip address frequency
             function ip_address_frequency() {
+                ip_address_list = [];
+                ip_address_count = [];
                 for (var i = 0; i < data_transformed.length; i++) {
                     var ip_address = data_transformed[i][1];
                     var index = ip_address_list.indexOf(ip_address);
@@ -367,6 +405,48 @@
                 console.log("click to see 'ip_address_count' below.");
                 console.log(ip_address_count);
             }
+
+            var username_point = [];
+            var password_point = [];
+            //Create the arrays needed for a username vs. password scatter plot
+            function username_password_organize() {
+                username_point = [];
+                password_point = [];
+                var j = 0;
+                for (var i = 0; i < data_transformed.length; i++) {
+                    var ps = data_transformed[i][3].split(" ");
+
+                    for (var k = 0; k < ps.length; k++) {
+                        username_point[j] = data_transformed[i][2];
+                        password_point[j] = ps[k];
+                        j++;
+                    }
+                }
+                console.log("click to see 'username_points' below.");
+                console.log(username_point);
+                console.log("click to see 'password_points' below.");
+                console.log(password_point);
+            }
+            
+            var hour = [];
+            var sessionCounter = [];
+            function organize_time_data(){
+                hour = Array.from({length:24}, (x,i) => i);
+                sessionCounter = new Array(24).fill(0);
+                
+                for(var i = 0; i < data_transformed.length; i++){
+                    var timeString = data_transformed[i][4].substr(0,2);
+                    var timeInt = parseInt(timeString);
+                    
+                    sessionCounter[timeInt] += 1;
+  
+                }
+                console.log("click to see 'hour' below.");
+                console.log(hour);
+                console.log("click to see 'sessionCounter' below.");
+                console.log(sessionCounter);
+            }
+        
 
 
             var randomColorPlugin = {
