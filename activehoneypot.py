@@ -32,7 +32,7 @@ PRIMES = {
             889633836007296066695655481732069270550615298858522362356462966213994239650370532015908457586090329628589149803446849742862797136176274424808060302038380613106889959709419621954145635974564549892775660764058259799708313210328185716628794220535928019146593583870799700485371067763221569331286080322409646297706526831155237865417316423347898948704639476720848300063714856669054591377356454148165856508207919637875509861384449885655015865507939009502778968273879766962650318328175030623861285062331536562421699321671967257712201155508206384317725827233614202768771922547552398179887571989441353862786163421248709273143039795776049771538894478454203924099450796009937772259125621285287516787494652132525370682385152735699722849980820612370907638783461523042813880757771177423192559299945620284730833939896871200164312605489165789501830061187517738930123242873304901483476323853308396428713114053429620808491032573674192385488925866607192870249619437027459456991431298313382204980988971292641217854130156830941801474940667736066881036980286520892090232096545650051755799297658390763820738295370567143697617670291263734710392873823956589171067167839738896249891955689437111486748587887718882564384870583135509339695096218451174112035938859)],
 }
 
-SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget", "exit", "shutdown", "whoami", "pwd", "cd"]
+SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget", "exit", "shutdown", "whoami", "pwd", "cd", "rm", "rmdir", "cat"]
 
 
 log.startLogging(sys.stderr)
@@ -123,6 +123,12 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 self.pwd_command(arguments)
             elif command == "cd":
                 self.cd_command(arguments)
+            elif command == "rm":
+                self.rm_command(arguments)
+            elif command == "rmdir":
+                self.rmdir_command(arguments)
+            elif command == "cat":
+                self.cat_command(arguments)
             #elif command == "passwd":
             #    self.passwd_command(arguments)
             else:
@@ -186,14 +192,43 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             self.working_directory = "/"
             return
         string_dir = arguments[0]
-        if string_dir[:1] != "/":
-            string_dir = "/" + string_dir
-        if filesys.filesys.isdir(string_dir):
-            print("Found directory: " + string_dir)
-            self.working_directory = string_dir
+        if string_dir[:1] == "/":
+            if filesys.filesys.isdir(string_dir):
+                print("Found directory: " + string_dir)
+                self.working_directory = string_dir
+                return
         else:
-            self.sendLine("bash: cd: "+ string_dir +": No such file or directory.")
+            string_dir = self.working_directory + "/" + string_dir
+            print("Searching for " + string_dir)
+            if filesys.filesys.isdir(string_dir):
+                print("Found directory: " + string_dir)
+                self.working_directory = string_dir
+                return
+        self.sendLine("bash: cd: "+ string_dir +": No such file or directory.")
         return
+
+    def cat_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("cat: missing operand")
+            self.sendLine("Try 'cat --help' for more information.")
+            return
+        else:
+            string_dir = arguments[0]
+            if not string_dir[:1] == "/":
+                string_dir = self.working_directory + "/" + string_dir
+            if self.filesys.filesys.isdir(string_dir):
+                self.sendLine("cat: " + string_dir + ": Is a directory")
+                return
+            if not self.filesys.filesys.isfile(string_dir):
+                self.sendLine("cat: " + string_dir + ": File does not exist")
+                return
+            else:
+                pointer = self.filesys.filesys.open(string_dir, "r")
+                for line in pointer:
+                    self.sendLine(line)
+                pointer.close()
+                return
+            return
 
 
     def whoami_command(self, arguments=[]):
@@ -212,8 +247,53 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def ls_command(self, arguments=[]):
-        self.sendLine("Desktop\tPublic\tTemplates\tDocuments\tDownloads\tMusic\n\rPictures")
+        ls_string = ""
+        for file in self.filesys.filesys.listdir(self.working_directory):
+            ls_string = ls_string + file + "\r\n" # TODO: Make the formatting nicer.
+        self.sendLine(ls_string)
         return
+
+    def rm_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("rm: missing operand")
+            self.sendLine("Try 'rm --help' for more information.")
+            return
+        else:
+            string_dir = arguments[0]
+            if not string_dir[:1] == "/":
+                string_dir = self.working_directory + "/" + string_dir
+            print("Searching to delete: " + string_dir)
+            if self.filesys.filesys.isfile(string_dir):
+                print("Found and deleting.")
+                self.filesys.filesys.remove(string_dir)
+                return
+            elif self.filesys.filesys.isdir(string_dir):
+                self.sendLine("rm: cannot remove '" + string_dir + "': Is a directory")
+                return
+            self.sendLine("rm: cannot remove '" + string_dir + "': No such file or directory")
+        return
+
+    def rmdir_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("rmdir: missing operand")
+            self.sendLine("Try 'rmdir --help' for more information.")
+            return
+        else:
+            string_dir = arguments[0]
+            if not string_dir[:1] == "/":
+                string_dir = self.working_directory + "/" + string_dir
+            print("Searching to delete: " + string_dir)
+            if self.filesys.filesys.isdir(string_dir):
+                print("Found and deleting.")
+                self.filesys.filesys.removedir(string_dir)
+                return
+            elif self.filesys.filesys.isfile(string_dir):
+                self.sendLine("rmdir: cannot remove '" + string_dir + "': Is a file")
+                return
+            self.sendLine("rmdir: cannot remove '" + string_dir + "': No such file or directory")
+        return
+
+
 
     def df_command(self, arguments=[]):
         #if not arguments:
@@ -423,7 +503,9 @@ class FileSystem(object):
     def __init__(self):
         self.filesys = tempfs.TempFS()
        
-        dirs = ["bin", "boot", "cdrom", "dev", "etc", "home", "lib", "lib64", "lost+found", "media", "mnt", "opt", "root", "run", "sbin", "snap", "srv", "sys", "tmp", "usr", "var"]
+        #dirs = ["bin", "boot", "cdrom", "dev", "etc", "home", "lib", "lib64", "lost+found", "media", "mnt", "opt", "root", "run", "sbin", "snap", "srv", "sys", "tmp", "usr", "var"]
+        dirs = ["etc", "boot"] # smaller filesystem for demo, also we should not load /home/ as that has our ssh keys and stuff
+
         for my_dir in dirs:
            my_fs = OSFS("/"+ my_dir)
            try:
@@ -433,9 +515,9 @@ class FileSystem(object):
               print("EXCEPTION: " + my_dir)
            #self.filesys.tree()
 
-        pointer = self.filesys.open("/newfile","w+")
-        pointer.write("Contents of a file.\r\n")
-        pointer.close()
+        #pointer = self.filesys.open("/newfile","w+")
+        #pointer.write("Contents of a file.\r\n")
+        #pointer.close()
         
         self.filesys.makedir("/home")
         pointer = self.filesys.open("/home/notes","w+")
