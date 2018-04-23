@@ -3,13 +3,17 @@ import sys
 import subprocess
 import urllib.request
 import time
+import fs
+from fs import tempfs
+from fs.osfs import OSFS
 
 #Added by Shlomo
-import datetime
+#import datetime
 import MySQLdb
 import requests
 import os
 
+from datetime import time, datetime
 from twisted.conch import avatar
 from twisted.conch.ssh import factory, session, userauth, connection, keys
 from twisted.conch.ssh.transport import SSHServerTransport
@@ -28,7 +32,7 @@ PRIMES = {
             889633836007296066695655481732069270550615298858522362356462966213994239650370532015908457586090329628589149803446849742862797136176274424808060302038380613106889959709419621954145635974564549892775660764058259799708313210328185716628794220535928019146593583870799700485371067763221569331286080322409646297706526831155237865417316423347898948704639476720848300063714856669054591377356454148165856508207919637875509861384449885655015865507939009502778968273879766962650318328175030623861285062331536562421699321671967257712201155508206384317725827233614202768771922547552398179887571989441353862786163421248709273143039795776049771538894478454203924099450796009937772259125621285287516787494652132525370682385152735699722849980820612370907638783461523042813880757771177423192559299945620284730833939896871200164312605489165789501830061187517738930123242873304901483476323853308396428713114053429620808491032573674192385488925866607192870249619437027459456991431298313382204980988971292641217854130156830941801474940667736066881036980286520892090232096545650051755799297658390763820738295370567143697617670291263734710392873823956589171067167839738896249891955689437111486748587887718882564384870583135509339695096218451174112035938859)],
 }
 
-SUPPORTED_COMMANDS = ["ls", "du", "ifconfig", "uname", "wget"]
+SUPPORTED_COMMANDS = ["ls", "df", "ifconfig", "uname", "wget", "exit", "shutdown", "whoami", "pwd", "cd", "rm", "rmdir", "cat"]
 
 
 log.startLogging(sys.stderr)
@@ -73,6 +77,8 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     ipAddr = ''
     logFolder = ""
     filesDownloaded = 0
+    filesys = None
+    working_directory = "/home"
 
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
@@ -84,9 +90,13 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         elif data == b'\x03':  # Quit on receiving Ctrl+C
             self.transport.loseConnection()
             return
+        if data == b'\r\n' or data == b'\n' or data == b'\r' or data == b'\n\r':
+            #self.showPrompt()
+            return
 
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
-        fp.write(data + "\n")
+        timestamp = '[{:%Y-%m-%d %H:%M:%S}]'.format(datetime.now())
+        fp.write(timestamp + " " + data + "\n")
         command = self.commandWithoutArguments(data)  # get the command without any arguments
         arguments = self.commandGetArguments(data)
         print("Test of command without arguments function: " + command)
@@ -98,16 +108,39 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 self.ls_command(arguments)
             elif command == "wget":
                 self.wget_command(arguments)
+            elif command =="uname":
+                self.uname_command(arguments)
+            elif command == "exit" or command == "shutdown":
+                self.exit_command(arguments)
+                self.transport.loseConnection()
+            elif command == "df":
+                self.df_command(arguments)
+            elif command == "ifconfig":
+                self.ifconfig_command(arguments)
+            elif command == "whoami":
+                self.whoami_command(arguments)
+            elif command == "pwd":
+                self.pwd_command(arguments)
+            elif command == "cd":
+                self.cd_command(arguments)
+            elif command == "rm":
+                self.rm_command(arguments)
+            elif command == "rmdir":
+                self.rmdir_command(arguments)
+            elif command == "cat":
+                self.cat_command(arguments)
+            #elif command == "passwd":
+            #    self.passwd_command(arguments)
             else:
                 print("ERROR: Function for given command not found.\n")
-
-        if executableAllowed == False:
+        elif executableAllowed == False and command.isspace() == False:
             response = command + ": command not found"
-            fp.write(response + "\r\n\r\n")
+            fp.write(response + "\r\n")
             self.sendLine(response)
 
         fp.close()
         self.showPrompt()
+        return
 
     def sendLine(self, string):
         string = string + "\r\n"
@@ -119,6 +152,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         self.displayMessageOfDay()
         self.transport.write("\r\n")
         self.showPrompt()
+        self.filesys = FileSystem()
 
     def commandWithoutArguments(self, data):  # return first 'word' of a string, no arguments
         return data.split(' ', 1)[0]
@@ -132,6 +166,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
     def isCommandSupported(self, command):  # Checks config to see if the sent command is allowed to run
         if command in SUPPORTED_COMMANDS:
+            print("command "+ command + " is supported")
             return True
         return False
 
@@ -140,9 +175,133 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
 
     # Commands
-    def ls_command(self, arguments=[]):
-        self.sendLine("Desktop\tPublic\tTemplates\n\rDocuments\tDownloads\tMusic\n\rPictures")
+
+    #TODO: write passwd command, needs interactivity which we don't support yet
+    #def passwd_command(self, arguments=[]):
+    #    if arguments:
+    #        user_to_change = arguments[1]
+    #    else:
+    #        user_to_change = "root"
+
+    def pwd_command(self, arguments=[]):
+        self.sendLine(self.working_directory)
         return
+
+    def cd_command(self, arguments=[]):
+        if not arguments:
+            self.working_directory = "/"
+            return
+        string_dir = arguments[0]
+        if string_dir[:1] == "/":
+            if filesys.filesys.isdir(string_dir):
+                print("Found directory: " + string_dir)
+                self.working_directory = string_dir
+                return
+        else:
+            string_dir = self.working_directory + "/" + string_dir
+            print("Searching for " + string_dir)
+            if filesys.filesys.isdir(string_dir):
+                print("Found directory: " + string_dir)
+                self.working_directory = string_dir
+                return
+        self.sendLine("bash: cd: "+ string_dir +": No such file or directory.")
+        return
+
+    def cat_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("cat: missing operand")
+            self.sendLine("Try 'cat --help' for more information.")
+            return
+        else:
+            string_dir = arguments[0]
+            if not string_dir[:1] == "/":
+                string_dir = self.working_directory + "/" + string_dir
+            if self.filesys.filesys.isdir(string_dir):
+                self.sendLine("cat: " + string_dir + ": Is a directory")
+                return
+            if not self.filesys.filesys.isfile(string_dir):
+                self.sendLine("cat: " + string_dir + ": File does not exist")
+                return
+            else:
+                pointer = self.filesys.filesys.open(string_dir, "r")
+                for line in pointer:
+                    self.sendLine(line)
+                pointer.close()
+                return
+            return
+
+
+    def whoami_command(self, arguments=[]):
+        self.sendLine("root")
+        return
+
+    def ifconfig_command(self, arguments=[]):
+        self.sendLine("eth0      Link encap:Ethernet  HWaddr 08:22:27:3a:cd:14")
+        self.sendLine("          inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0")
+        self.sendLine("          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1")
+        self.sendLine("          RX packets:104664 errors:0 dropped:0 overruns:0 frame:0")
+        self.sendLine("          TX packets:26173 errors:0 dropped:0 overruns:0 carrier:0")
+        self.sendLine("          collisions:0 txqueuelen:1000")
+        self.sendLine("          RX bytes:123000109 (123.0 MB)  TX bytes:2187316 (2.1 MB)")
+        self.sendLine("")
+        return
+
+    def ls_command(self, arguments=[]):
+        ls_string = ""
+        for file in self.filesys.filesys.listdir(self.working_directory):
+            ls_string = ls_string + file + "\r\n" # TODO: Make the formatting nicer.
+        self.sendLine(ls_string)
+        return
+
+    def rm_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("rm: missing operand")
+            self.sendLine("Try 'rm --help' for more information.")
+            return
+        else:
+            string_dir = arguments[0]
+            if not string_dir[:1] == "/":
+                string_dir = self.working_directory + "/" + string_dir
+            print("Searching to delete: " + string_dir)
+            if self.filesys.filesys.isfile(string_dir):
+                print("Found and deleting.")
+                self.filesys.filesys.remove(string_dir)
+                return
+            elif self.filesys.filesys.isdir(string_dir):
+                self.sendLine("rm: cannot remove '" + string_dir + "': Is a directory")
+                return
+            self.sendLine("rm: cannot remove '" + string_dir + "': No such file or directory")
+        return
+
+    def rmdir_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("rmdir: missing operand")
+            self.sendLine("Try 'rmdir --help' for more information.")
+            return
+        else:
+            string_dir = arguments[0]
+            if not string_dir[:1] == "/":
+                string_dir = self.working_directory + "/" + string_dir
+            print("Searching to delete: " + string_dir)
+            if self.filesys.filesys.isdir(string_dir):
+                print("Found and deleting.")
+                self.filesys.filesys.removedir(string_dir)
+                return
+            elif self.filesys.filesys.isfile(string_dir):
+                self.sendLine("rmdir: cannot remove '" + string_dir + "': Is a file")
+                return
+            self.sendLine("rmdir: cannot remove '" + string_dir + "': No such file or directory")
+        return
+
+
+
+    def df_command(self, arguments=[]):
+        #if not arguments:
+        self.sendLine("Filesystem     1K-blocks    Used Available Use% Mounted on")
+        self.sendLine("udev             2539452       0   2539452   0% /dev")
+        self.sendLine("/dev/sda1        9156984 6489424   2179368  75% /")
+        return
+
 
     def wget_command(self, arguments=[]):
         if not arguments:
@@ -161,11 +320,42 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             self.filesDownloaded = self.filesDownloaded + 1
         return
 
+    def uname_command(self, arguments=[]):
+        if not arguments:
+            self.sendLine("Linux")
+            return
+        else:
+            flag = arguments[0].replace("-", "")
+            print("Uname command run with flag: " + flag)
+            if flag=="a":
+                self.sendLine("Linux root 4.13.0-37-generic #42~16.04.1-Ubuntu SMP Wed Mar 7 16:03:28 UTC 2018 x86_64 x86_64 x86_64 GNU/Linux")
+                return
+            elif flag == "s":
+                self.sendLine("Linux")
+                return
+            elif flag == "o":
+                self.sendLine("GNU/Linux")
+            else:
+                self.sendLine("uname: invalid option -- '" + flag + "'")
+                self.sendLine("Try 'uname --help' for more information.")
+                return
+            return
+
+    def exit_command(self, arguments=[]):
+        self.transport.loseConnection()
+        return
 
     def displayMessageOfDay(self):
-        file = open("./content/motd")
-        for line in file:
-            self.transport.write(line)
+        self.sendLine("\r\nWelcome to Ubuntu 11.10 (GNU/Linux 3.0.0-12-generic i686)\r\n")
+        self.sendLine("\r\n* Documentation https://help.ubuntu.com/\r\n")
+        self.sendLine("\r\n278 packages can be updated.\r\n71 updates are security updates.\r\n")
+        self.sendLine("\r\nThe programs included with the Ubuntu system are free software:")
+        self.sendLine("the exact distribution terms for each program are described in the")
+        self.sendLine("individual files in /usr/share/doc/*/copyright.\r\n")
+        self.sendLine("Ubuntu comes with ABSOLUTELY NO WARRANTY, the extent permitted by\r\napplicable law.")
+        #file = open("./content/motd")
+        #for line in file:
+        #    self.transport.write(line)
         return
 
     def showPrompt(self):
@@ -179,66 +369,67 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         dbPass = dbPass.rstrip('\n')
         fp.close()
         self.ipAddr = self.transport.getPeer().address.host
-
         self.logFolder = self.ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
         while (os.path.isfile(self.logFolder)):
             self.sessionNum+=1
             self.logFolder = self.ipAddr +'-'+str(self.sessionNum)+'-commands.txt'
 
-        access = datetime.datetime.now()
+        access = datetime.now()
         accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
         accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
 
-
-
         URL = 'http://ip-api.com/json/'+self.ipAddr
-        PARAMS = {'fields':'26393'}
+        PARAMS = {'fields':'57597'}
         r = requests.get(url = URL, params = PARAMS)
         data = r.json()
         status = data['status']
+        lat = lon = ""
+        print(data)
         if(status != 'fail'):
             city = data['city']
             country = data['country']
             state = data['regionName']
-            timezone = data['timezone']
-        else:
-            city = ""
-            country =""
-            state = ""
-            timezone = ""
-        #Insert to Database
-        db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
-        cursor = db.cursor()
-        sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate);
+            #timezone = data['timezone']
+            lat = str(data['lat'])
+            lon = str(data['lon'])
 
-        try: #Execute SQL command
-            cursor.execute(sql)
-            db.commit()
-        except:
-            db.rollback()
-        db.close()
+            #Insert to Database
+            db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+            cursor = db.cursor()
+            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, `latitude`, `longitude`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, country, city, state, accessDate, lat, lon);
+
+            try: #Execute SQL command
+                cursor.execute(sql)
+                db.commit()
+                print("Commit logMetadata")
+            except:
+                db.rollback()
+                print("Can't Commit logMetadata")
+            db.close()
+        elif(data['message'] == 'private range'):
+            db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+            cursor = db.cursor()
+            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, accessDate);
+
+            try: #Execute SQL command
+                cursor.execute(sql)
+                db.commit()
+                print("Commit logMetadata")
+            except:
+                db.rollback()
+                print("Can't Commit logMetadata")
+            db.close()
+
+        else:
+            print("Can't Commit logMetadata because ", data['message'], ".")
 
 class HoneypotSession(object):
     def __init__(self, avatar):
         pass
-
-    ## Currently the SSH client gives a weird error about PTY sessions, this code doesn't work but
-    ## is my current attempt to fix that.
-    # def getPty(self, term, windowSize, attrs):
-    # print("PTY session")
-    # self.windowSize = windowSize
-    # protocol = HoneypotProtocol()
-    # transport = SSHSessionProcessProtocol(self)
-    # protocol.makeConnection(transport)
-    # transport.makeConnection(session.wrapProtocol(protocol))
-    # return None
-
+    #def getPty(self, terminal, windowSize, attrs):
+        #pass
     def execCommand(self, proto, cmd):
         raise Exception("Remote command execution mode is disabled.")
-
-    # def request_pty_req(self, data):
-    # return True
-    # raise Exception("PTY requested")
 
     def openShell(self, transport):
         protocol = HoneypotProtocol()
@@ -272,18 +463,79 @@ class HoneypotPasswordAuth(FilePasswordDB):
     pass
 
 def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
-    print("Username: " + username.decode("utf-8"))
-    print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
-    print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
+    #print("Username: " + username.decode("utf-8"))
+    #print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
+    #print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
+
+    if((passwordFromNetwork.decode("utf-8"))!=(passwordFromFile.decode("utf-8"))):
+        file = open('failedpasswordattempts', "a+")
+        file.write(username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8")+"\n")
+        file.close()
+
+        #INSERT to database
+        fp = open("dbPassword.txt", "r")
+        dbPass = fp.readline()
+        dbPass = dbPass.rstrip('\n')
+        fp.close()
+        access = datetime.now()
+        accessTime = str(access.hour) + ":" + str(access.minute) + ":" + str(access.second)
+        accessDate = str(access.year) + "/" + str(access.month) + "/" + str(access.day)
+
+        print("tryingToOpenDb")
+        db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
+        cursor = db.cursor()
+        sql = "INSERT INTO `activehoneypotDB`.`login_attempts` (`usernames`, `passwords`, `usernames_passwords`, `time_access`, `date_access`) VALUES ('%s','%s', '%s', '%s','%s')"% ( username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), username.decode("utf-8")+":"+passwordFromNetwork.decode("utf-8"), accessTime, accessDate);
+
+        try: #Execute SQL command
+           cursor.execute(sql)
+           db.commit()
+
+        except MySQLdb.Error as e:
+           print(e)
+        except:
+           print("can't execute passwords INSERT")
+           db.rollback()
+        db.close()
+
     return passwordFromNetwork
 
+class FileSystem(object):
+    def __init__(self):
+        self.filesys = tempfs.TempFS()
+       
+        #dirs = ["bin", "boot", "cdrom", "dev", "etc", "home", "lib", "lib64", "lost+found", "media", "mnt", "opt", "root", "run", "sbin", "snap", "srv", "sys", "tmp", "usr", "var"]
+        dirs = ["etc", "boot"] # smaller filesystem for demo, also we should not load /home/ as that has our ssh keys and stuff
+
+        for my_dir in dirs:
+           my_fs = OSFS("/"+ my_dir)
+           try:
+              fs.copy.copy_fs(my_fs, self.filesys.makedir("/"+my_dir+"/"), walker=None, on_copy=None)
+              print("dir: " + my_dir + " created")
+           except:
+              print("EXCEPTION: " + my_dir)
+           #self.filesys.tree()
+
+        #pointer = self.filesys.open("/newfile","w+")
+        #pointer.write("Contents of a file.\r\n")
+        #pointer.close()
+        
+        self.filesys.makedir("/home")
+        pointer = self.filesys.open("/home/notes","w+")
+        pointer.write("my username for email is bob, my password for email is password")
+        pointer.close()
+
+        print("File tree initalized:\r\n")
+        self.filesys.tree()
+
 portal = portal.Portal(HoneypotRealm())
+filesys = FileSystem()
 passwdfile = HoneypotPasswordAuth("passwords", hash=honeypotHashFunction)
 portal.registerChecker(passwdfile)
 factory = HoneypotFactory()
 factory.portal = portal
 
 reactor.listenTCP(2222, factory)  # Open TCP port using specified factory to handle connections.
+reactor.listenTCP(2223, factory, interface="::") # Listen on this port for IPV6 interfaces (RaspPi direct network support)
 reactor.run()
 print("Server successfully running")
 
