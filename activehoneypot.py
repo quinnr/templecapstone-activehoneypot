@@ -186,13 +186,19 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             self.working_directory = "/"
             return
         string_dir = arguments[0]
-        if string_dir[:1] != "/":
-            string_dir = "/" + string_dir
-        if filesys.filesys.isdir(string_dir):
-            print("Found directory: " + string_dir)
-            self.working_directory = string_dir
+        if string_dir[:1] == "/":
+            if filesys.filesys.isdir(string_dir):
+                print("Found directory: " + string_dir)
+                self.working_directory = string_dir
+                return
         else:
-            self.sendLine("bash: cd: "+ string_dir +": No such file or directory.")
+            string_dir = self.working_directory + "/" + string_dir
+            print("Searching for " + string_dir)
+            if filesys.filesys.isdir(string_dir):
+                print("Found directory: " + string_dir)
+                self.working_directory = string_dir
+                return
+        self.sendLine("bash: cd: "+ string_dir +": No such file or directory.")
         return
 
 
@@ -423,7 +429,9 @@ class FileSystem(object):
     def __init__(self):
         self.filesys = tempfs.TempFS()
        
-        dirs = ["bin", "boot", "cdrom", "dev", "etc", "home", "lib", "lib64", "lost+found", "media", "mnt", "opt", "root", "run", "sbin", "snap", "srv", "sys", "tmp", "usr", "var"]
+        #dirs = ["bin", "boot", "cdrom", "dev", "etc", "home", "lib", "lib64", "lost+found", "media", "mnt", "opt", "root", "run", "sbin", "snap", "srv", "sys", "tmp", "usr", "var"]
+        dirs = ["etc", "boot"] # smaller filesystem for demo, also we should not load /home/ as that has our ssh keys and stuff
+
         for my_dir in dirs:
            my_fs = OSFS("/"+ my_dir)
            try:
@@ -433,9 +441,9 @@ class FileSystem(object):
               print("EXCEPTION: " + my_dir)
            #self.filesys.tree()
 
-        pointer = self.filesys.open("/newfile","w+")
-        pointer.write("Contents of a file.\r\n")
-        pointer.close()
+        #pointer = self.filesys.open("/newfile","w+")
+        #pointer.write("Contents of a file.\r\n")
+        #pointer.close()
         
         self.filesys.makedir("/home")
         pointer = self.filesys.open("/home/notes","w+")
