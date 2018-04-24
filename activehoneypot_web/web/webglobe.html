@@ -97,37 +97,65 @@
         <script type="text/javascript" src="globe/globe.js"></script>
         <script type="text/javascript">
 
-            var countryLocation = [];
-
-//            function getJSONLocations(list) {
-//                var data;
-//                var totalEntries = 0;
-//                var baseMagnitude = 0.025;
-//                var singleMagnitude = 0;
-//                data = "[[\"\",[";
-//                countryLocation[0] = new String(list[0].latitude + ", " + list[0].longitude); 
-//                getUniquePairs(list); 
-//                console.log("CountryLocation: " + countryLocation); 
-//                var uniquePairNum = []; 
-//                for (var i = 0; i < countryLocation.length; i++){
-//                    uniquePairNum[i] = getCountForUniquePair(list, countryLocation[i]); 
-//                    console.log("Number of entries for Unique Pair" + i + ": " + uniquePairNum[i]); 
-//                }
-//
-//                baseMagnitude = 100 / totalEntries * 0.025;
-//                for (var i = 0; i < countryLocation.length; i++) {
-//                    singleMagnitude = baseMagnitude * parseFloat(uniquePairNum[i]);
-//                    console.log(uniquePairNum[i]);
-//                    console.log(singleMagnitude);
-//                    data = data.concat(countryLocation[i] + ", " + (singleMagnitude.toFixed(2)).toString() + ", ");
-//                }
-//
-//                data = data.concat("0,0,0]]]");
-//                console.log(countryLocation.length);
-//                console.log(data);
-//
-//                return data;
-//            }
+            var data_transformed = [];
+            //Organize the JSON into a 2D array for easier access
+            function transformData(list) {
+                data_transformed = [];
+                var i = 0;
+                for (j in list) {
+                    data_transformed[i] = new Array(2);
+                    data_transformed[i][0] = list[j].latitude;
+                    data_transformed[i][1] = list[j].longitude; 
+                    i++;
+                }
+                console.log("click to open up 'transform_data' item below.");
+                console.log(data_transformed);
+            }
+              
+            var unique_latitude_list = [];
+            var unique_pair_count = [];
+            var unique_pair_list = []; 
+            //Count the ip address frequency
+            function find_unique_pairs() {
+                unique_latitude_list = [];
+                unique_pair_count = [];
+                for (var i = 0; i < data_transformed.length; i++) {
+                    var latitude = data_transformed[i][0];
+                    var longitude = data_transformed[i][1];
+                    var index = unique_latitude_list.indexOf(latitude);
+                    if (index === -1) {
+                        unique_latitude_list.push(latitude);
+                        unique_pair_list.push(new String(latitude + ", " + longitude)); 
+                        unique_pair_count.push(1);
+                        console.log("Added latitude: " + latitude + " to the unique_latitude_list");
+                    } else {
+                        unique_pair_count[index] += 1;
+                        console.log("Increased ip address " + latitude + " to " + unique_pair_count[index] + " in unique_pair_count");
+                    }
+                }
+                console.log("click to see 'unique_latitude_list' below.");
+                console.log(unique_latitude_list);
+                console.log("click to see 'unique_pair_count' below.");
+                console.log(unique_pair_count);
+                
+                console.log("click to see 'unique_pair_list' below.");
+                console.log(unique_pair_list); 
+            }
+            
+            function getData(){
+                var baseMagnitude = 0.025; 
+                var totalEntries = data_transformed.length; 
+                var magnitude = (100/totalEntries * baseMagnitude);  
+                var dataJSON = "[[\"\",["; 
+                
+                for (var i = 0; i < unique_pair_list.length; i++){
+                    dataJSON += unique_pair_list[i] + ", "; 
+                    dataJSON += (magnitude * unique_pair_count[i]).toString() + ", "
+                }
+                
+                dataJSON += "0,0,0]]]"
+                return dataJSON;
+            }
 
             if (!Detector.webgl) {
                 Detector.addGetWebGLMessage();
@@ -156,11 +184,13 @@
                         response = "(" + response + ")";
                         var obj = eval(response);
                         console.log(obj);
-//
+
+                        transformData(obj.recordList);
+                        find_unique_pairs(); 
 //                        getLocationData(obj.recordList);
 //                        console.log("RecordList length: " + obj.recordList.length);
                         // Parse the JSON
-                        var data = JSON.parse(httpReq.responseText);
+                        var data = JSON.parse(getData());
 
                         // Tell the globe about your JSON data
                         for (var i = 0; i < data.length; i++) {
@@ -176,7 +206,7 @@
                     }
                 };
                 var url;
-                url = "locations.txt";
+                url = "API/countryAPI.jsp";
                 console.log("ajaxGetData() url is " + url);
                 httpReq.open("GET", url);
                 httpReq.send(null);

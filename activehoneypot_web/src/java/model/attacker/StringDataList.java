@@ -25,19 +25,19 @@ public class StringDataList {
             String sql;
             if (searchBy.equals("state")) {
                 sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
-                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed, latitude, longitude FROM attacker "
                         + " WHERE state LIKE ? ORDER BY attackerID DESC";
             } else if (searchBy.equals("city")) {
                 sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
-                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed, latitude, longitude FROM attacker "
                         + " WHERE city LIKE ? ORDER BY attackerID DESC";
             } else if (searchBy.equals("ip")) {
                 sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
-                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed, latitude, longitude FROM attacker "
                         + " WHERE ip_address LIKE ? ORDER BY attackerID DESC";
             } else {
                 sql = "SELECT attackerID, ip_address, username, passwords, time_of_day_accessed, logFile, "
-                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed FROM attacker "
+                        + "sessions, country, city, state, logged_in, uploaded_files, date_accessed, latitude, longitude FROM attacker "
                         + " WHERE country LIKE ? ORDER BY attackerID DESC";
             }
             PreparedStatement stmt = dbc.getConn().prepareStatement(sql);
@@ -57,6 +57,8 @@ public class StringDataList {
                     sd.country = FormatUtils.formatString(results.getObject("country"));
                     sd.city = FormatUtils.formatString(results.getObject("city"));
                     sd.state = FormatUtils.formatString(results.getObject("state"));
+                    sd.latitude = FormatUtils.formatString(results.getObject("latitude"));
+                    sd.longitude = FormatUtils.formatString(results.getObject("longitude"));
                     //logged_in
                     //uplaoded_files
                     sd.date_accessed = FormatUtils.formatDate(results.getObject("date_accessed"));

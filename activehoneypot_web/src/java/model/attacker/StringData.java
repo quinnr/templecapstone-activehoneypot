@@ -15,6 +15,8 @@ public class StringData {
     public String logged_in = "";
     public String uploaded_files = "";
     public String date_accessed = "";
+    public String latitude = "";
+    public String longitude = ""; 
     public String errorMsg = "";
 
 }
