@@ -83,7 +83,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
        # ipAddr = self.transport.getPeer().address.host
        # commandsEntered = self.ipAddr + '-'+ self.sessionNum + '-commands.txt'
-        fp = open(self.logFolder, "a")
+        fp = open("/opt/tomcat/webapps/ActiveHoneypotWeb/logfiles/"+self.logFolder, "a+")
 
         if data == b'\r':  # Convert weird line returns to be proper
             data = b'\r\n'
@@ -96,7 +96,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
 
         data = self.bytestoString(data)  # convert the raw bytes to a string so we can manipulate it
         timestamp = '[{:%Y-%m-%d %H:%M:%S}]'.format(datetime.now())
-        fp.write(timestamp + " " + data + "\n")
+        fp.write(timestamp + " " + data + "<br/>\n")
         command = self.commandWithoutArguments(data)  # get the command without any arguments
         arguments = self.commandGetArguments(data)
         print("Test of command without arguments function: " + command)
@@ -135,7 +135,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 print("ERROR: Function for given command not found.\n")
         elif executableAllowed == False and command.isspace() == False:
             response = command + ": command not found"
-            fp.write(response + "\r\n")
+            fp.write(timestamp + " " +response + "<br/>\n")
             self.sendLine(response)
 
         fp.close()
@@ -148,6 +148,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def connectionMade(self):  # Run when connection is first made.
+        print("self.logFolder: ", self.logFolder)
         self.logMetadata()
         self.displayMessageOfDay()
         self.transport.write("\r\n")
@@ -370,7 +371,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         fp.close()
         self.ipAddr = self.transport.getPeer().address.host
         self.logFolder = self.ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
-        while (os.path.isfile(self.logFolder)):
+        while (os.path.isfile("/opt/tomcat/webapps/ActiveHoneypotWeb/logfiles/"+self.logFolder)):
             self.sessionNum+=1
             self.logFolder = self.ipAddr +'-'+str(self.sessionNum)+'-commands.txt'
 
@@ -409,7 +410,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         elif(data['message'] == 'private range'):
             db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
             cursor = db.cursor()
-            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, accessDate);
+            sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`,`country`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, "localhost",  accessDate);
 
             try: #Execute SQL command
                 cursor.execute(sql)
@@ -463,7 +464,7 @@ class HoneypotPasswordAuth(FilePasswordDB):
     pass
 
 def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
-    #print("Username: " + username.decode("utf-8"))
+    print("Username: " + username.decode("utf-8"))
     #print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
     #print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
 
@@ -495,6 +496,17 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
         except:
            print("can't execute passwords INSERT")
            db.rollback()
+       # db.close()
+        
+        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`username`, `passwords`) VALUES ('%s', '%s')"% (username.decode("utf-8"), passwordFromNetwork.decode("utf-8"));
+
+        try: #Execute SQL command
+           cursor.execute(sql2)
+           db.commit()
+           print("Commit sql2")
+        except:
+           db.rollback()
+           print("Can't Commit sql2")
         db.close()
 
     return passwordFromNetwork
