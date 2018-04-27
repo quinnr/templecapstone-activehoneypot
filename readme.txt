@@ -10,6 +10,7 @@ twisted[conch]
 mysqlclient
 requests
 fs
+pyrebase
 
 MUST SET UP ONLY THESE LIBRARIES IN A VIRTUAL ENVIRONMENT _AND_ ACTIVATE THE VIRTUAL ENVIRONMENT WITH
 source ./venv/bin/activate

@@ -12,6 +12,7 @@ from fs.osfs import OSFS
 import MySQLdb
 import requests
 import os
+import pyrebase
 
 from datetime import time, datetime
 from twisted.conch import avatar
@@ -78,6 +79,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
     logFolder = ""
     filesDownloaded = 0
     filesys = None
+    attackerNum = 0
     working_directory = "/home"
 
     def dataReceived(self, data):  # TODO: Start implementation of the protocol!
@@ -365,10 +367,19 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
         return
 
     def logMetadata(self):
+        #MySQL
         fp = open("dbPassword.txt", "r")
         dbPass = fp.readline()
         dbPass = dbPass.rstrip('\n')
         fp.close()
+
+        #Firebase
+        fpFb = open("fbkey.txt", "r")
+        fbKey = fpFb.readline()
+        fbKey = fbKey.rstrip('\n')
+        fpFb.close()
+        self.attackerNum += 1;
+
         self.ipAddr = self.transport.getPeer().address.host
         self.logFolder = self.ipAddr + '-' + str(self.sessionNum) + '-commands.txt'
         while (os.path.isfile("/opt/tomcat/webapps/ActiveHoneypotWeb/logfiles/"+self.logFolder)):
@@ -390,7 +401,6 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             city = data['city']
             country = data['country']
             state = data['regionName']
-            #timezone = data['timezone']
             lat = str(data['lat'])
             lon = str(data['lon'])
 
@@ -407,10 +417,24 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
                 db.rollback()
                 print("Can't Commit logMetadata")
             db.close()
+
+            fbConfig = {'apiKey': fbKey, 'authDomain': 'honeypot-1c941.firebaseapp.com', 'databaseURL': 'https://honeypot-1c941.firebaseio.com', 'storageBucket': 'honeypot-1c941.appspot.com'}
+            fb = pyrebase.initialize_app(fbConfig)
+            fddb = fb.database()
+            data = {"attackerID": self.attackerNum, "ip_address": self.ipAddr, "username": "root", "passwords": "password", "time_of_day_accessed": accessTime, "logFile": self.logFolder, "sessions": self.sessionNum, "country": country, "city": city, "state": state , "date_accessed": accessDate, "latitude": lat, "longitude": lon}
+            fddb.child("attacks").push(data)
+       
         elif(data['message'] == 'private range'):
             db = MySQLdb.connect("activehoneypot-instance1.c6cgtt72anqv.us-west-2.rds.amazonaws.com", "ahpmaster", dbPass, "activehoneypotDB")
             cursor = db.cursor()
             sql = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`,`country`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s', '%s')"% (self.ipAddr, 'root', 'password', accessTime, self.logFolder, self.sessionNum, "localhost",  accessDate);
+
+
+            fbConfig = {'apiKey': fbKey, 'authDomain': 'honeypot-1c941.firebaseapp.com', 'databaseURL': 'https://honeypot-1c941.firebaseio.com', 'storageBucket': 'honeypot-1c941.appspot.com'}
+            fb = pyrebase.initialize_app(fbConfig)
+            fbdb = fb.database()
+            data = {"attackerID": self.attackerNum, "ip_address": self.ipAddr, "username": "root", "passwords": "password", "time_of_day_accessed": accessTime, "logFile": self.logFolder, "sessions": self.sessionNum, "date_accessed": accessDate}
+            fbdb.child("attacks").push(data)
 
             try: #Execute SQL command
                 cursor.execute(sql)
@@ -422,7 +446,7 @@ class HoneypotProtocol(protocol.Protocol):  # Contains functions for handling in
             db.close()
 
         else:
-            print("Can't Commit logMetadata because ", data['message'], ".")
+            print("Can't Commit logMetadata because ", data['message'], ".") 
 
 class HoneypotSession(object):
     def __init__(self, avatar):
@@ -495,10 +519,35 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
            print(e)
         except:
            print("can't execute passwords INSERT")
-           db.rollback()
-       # db.close()
+           db.rollback() 
+        URL = 'http://ip-api.com/json/'+self.ipAddr
+        PARAMS = {'fields':'57597'}
+        r = requests.get(url = URL, params = PARAMS)
+        data = r.json()
+        status = data['status']
+        lat = lon = ""
+        print(data)
         
-        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`username`, `passwords`) VALUES ('%s', '%s')"% (username.decode("utf-8"), passwordFromNetwork.decode("utf-8"));
+        if(status != 'fail'):
+            city = data['city']
+            country = data['country']
+            state = data['regionName']
+            lat = str(data['lat'])
+            lon = str(data['lon'])
+
+        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, `latitude`, `longitude`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt", self.sessionNum, country, city, state, accessDate, lat, lon);
+
+        #Firebase
+        fp = open("fbkey.txt", "r")
+        fbKey = fp.readline()
+        fbKey = fbKey.rstrip('\n')
+        fp.close()
+        
+        fbConfig = {'apiKey': fbKey, 'authDomain': 'honeypot-1c941.firebaseapp.com', 'databaseURL': 'https://honeypot-1c941.firebaseio.com', 'storageBucket': 'honeypot-1c941.appspot.com'}
+        fb = pyrebase.initialize_app(config)
+        db = fb.database()
+        data = { "ip_address": self.ipAddr, "username": username.decode("utf-8"), "passwords": passwordFromNetwork.decode("utf-8"), "time_of_day_accessed": accessTime, "logFile": "notLoggedIn.txt", "sessions": self.sessionNum, "country": country, "city": city, "state": state , "date_accessed": accessDate, "latitude": lat, "longitude": lon}
+        db.child("attacks").push(data)
 
         try: #Execute SQL command
            cursor.execute(sql2)
