@@ -488,9 +488,8 @@ class HoneypotPasswordAuth(FilePasswordDB):
     pass
 
 def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
-    print("Username: " + username.decode("utf-8"))
+    #print("Username: " + username.decode("utf-8"))
     #print("Network Given Password: "+ passwordFromNetwork.decode("utf-8"))
-    #print("Password in FileDB: "+passwordFromFile.decode("utf-8"))
 
     if((passwordFromNetwork.decode("utf-8"))!=(passwordFromFile.decode("utf-8"))):
         file = open('failedpasswordattempts', "a+")
@@ -520,22 +519,11 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
         except:
            print("can't execute passwords INSERT")
            db.rollback() 
-        URL = 'http://ip-api.com/json/'+self.ipAddr
-        PARAMS = {'fields':'57597'}
-        r = requests.get(url = URL, params = PARAMS)
-        data = r.json()
-        status = data['status']
-        lat = lon = ""
-        print(data)
-        
-        if(status != 'fail'):
-            city = data['city']
-            country = data['country']
-            state = data['regionName']
-            lat = str(data['lat'])
-            lon = str(data['lon'])
-
-        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`, `city`, `state`, `date_accessed`, `latitude`, `longitude`) VALUES ('%s', '%s','%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s', '%s')"% (self.ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt", self.sessionNum, country, city, state, accessDate, lat, lon);
+        ipAddr = "0.0.0.0" 
+        city = "Failed Login"
+        country = "Failed Login"
+        state = "Failed Login"
+        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s')"% (ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt", country, city, state, accessDate);
 
         #Firebase
         fp = open("fbkey.txt", "r")
@@ -544,10 +532,10 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
         fp.close()
         
         fbConfig = {'apiKey': fbKey, 'authDomain': 'honeypot-1c941.firebaseapp.com', 'databaseURL': 'https://honeypot-1c941.firebaseio.com', 'storageBucket': 'honeypot-1c941.appspot.com'}
-        fb = pyrebase.initialize_app(config)
-        db = fb.database()
-        data = { "ip_address": self.ipAddr, "username": username.decode("utf-8"), "passwords": passwordFromNetwork.decode("utf-8"), "time_of_day_accessed": accessTime, "logFile": "notLoggedIn.txt", "sessions": self.sessionNum, "country": country, "city": city, "state": state , "date_accessed": accessDate, "latitude": lat, "longitude": lon}
-        db.child("attacks").push(data)
+        fb = pyrebase.initialize_app(fbConfig)
+        fbdb = fb.database()
+        data = { "ip_address": ipAddr, "username": username.decode("utf-8"), "passwords": passwordFromNetwork.decode("utf-8"), "time_of_day_accessed": accessTime, "logFile": "notLoggedIn.txt", "country": country, "city": city, "state": state , "date_accessed": accessDate}
+        fbdb.child("attacks").push(data)
 
         try: #Execute SQL command
            cursor.execute(sql2)
