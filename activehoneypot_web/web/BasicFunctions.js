@@ -45,10 +45,8 @@ function find_password_frequency(list) {
                 if (index === -1) {
                     password_list.push(ps[j]);
                     password_count.push(1);
-                    console.log("Added password: " + ps[j] + " to the password_list");
                 } else {
                     password_count[index] += 1;
-                    console.log("Increased password " + ps[j] + " to " + password_count[index] + " in password_count");
                 }
             }
         }
