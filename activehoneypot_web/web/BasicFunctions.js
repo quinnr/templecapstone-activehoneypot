@@ -124,11 +124,9 @@ function organize_day_data(list) {
     for (var k = 0; k < list.length; k++) {
         if (!(list[k][12] === "")) {
             var dayString = new Date(list[k][12]).getDay();
-            var index = day.indexOf(name);
+            var index = day.indexOf(dayString);
 
-            var dayInt = parseInt(dayString);
-
-            day_counter[dayInt] += 1;
+            day_counter[index] += 1;
         }
     }
 
@@ -139,6 +137,28 @@ function organize_day_data(list) {
 
     return [day, day_counter];
 
+}
+var data_percentage;
+function get_percentages(data_count){
+    data_percentage = Array.from(data_count.length).fill(0);
+    
+    var sum = data_count.reduce(add, 0);
+    
+    for(var k = 0; k < data_count.length; k++){
+        data_percentage[k] = 100 * (data_count[k] / sum) ;
+    }
+    
+    console.log("click to see 'data_count below.");
+    console.log(data_count);
+    console.log("click to see 'data_percentage' below.");
+    console.log(data_percentage);
+    
+    return data_percentage;
+    
+}
+
+function add(a, b) {
+    return a + b;
 }
 
 
