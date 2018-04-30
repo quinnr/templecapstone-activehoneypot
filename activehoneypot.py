@@ -519,8 +519,10 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
         except:
            print("can't execute passwords INSERT")
            db.rollback() 
-        ipAddr = "0.0.0.0" 
-        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `date_accessed`) VALUES ('%s', '%s', '%s','%s', '%s','%s')"% (ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt", accessDate);
+        ipAddr = "0.0.0.0"
+        state = city = "Failed Login"
+        country = "" 
+        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `sessions`, `country`,`state`, `city`, `date_accessed`) VALUES ('%s', '%s','%s', '%s', '%s', '%s', '%s','%s', '%s','%s')"% (ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt","0", country, state, city, accessDate);
 
         #Firebase
         fp = open("fbkey.txt", "r")
@@ -531,7 +533,7 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
         fbConfig = {'apiKey': fbKey, 'authDomain': 'honeypot-1c941.firebaseapp.com', 'databaseURL': 'https://honeypot-1c941.firebaseio.com', 'storageBucket': 'honeypot-1c941.appspot.com'}
         fb = pyrebase.initialize_app(fbConfig)
         fbdb = fb.database()
-        data = { "ip_address": ipAddr, "username": username.decode("utf-8"), "passwords": passwordFromNetwork.decode("utf-8"), "time_of_day_accessed": accessTime, "logFile": "notLoggedIn.txt", "country": country, "city": city, "state": state , "date_accessed": accessDate}
+        data = { "ip_address": ipAddr, "username": username.decode("utf-8"), "passwords": passwordFromNetwork.decode("utf-8"), "time_of_day_accessed": accessTime, "logFile": "notLoggedIn.txt", "date_accessed": accessDate}
         fbdb.child("attacks").push(data)
 
         try: #Execute SQL command
