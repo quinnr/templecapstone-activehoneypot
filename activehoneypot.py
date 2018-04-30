@@ -520,10 +520,7 @@ def honeypotHashFunction(username, passwordFromNetwork, passwordFromFile):
            print("can't execute passwords INSERT")
            db.rollback() 
         ipAddr = "0.0.0.0" 
-        city = "Failed Login"
-        country = "Failed Login"
-        state = "Failed Login"
-        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `country`, `city`, `state`, `date_accessed`) VALUES ('%s', '%s', '%s','%s', '%s','%s', '%s', '%s','%s')"% (ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt", country, city, state, accessDate);
+        sql2 = "INSERT INTO `activehoneypotDB`.`attacker` (`ip_address`, `username`, `passwords`, `time_of_day_accessed`, `logFile`, `date_accessed`) VALUES ('%s', '%s', '%s','%s', '%s','%s')"% (ipAddr, username.decode("utf-8"), passwordFromNetwork.decode("utf-8"), accessTime, "notLoggedIn.txt", accessDate);
 
         #Firebase
         fp = open("fbkey.txt", "r")
